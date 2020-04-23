@@ -1,9 +1,13 @@
 setwd("/Users/pesavage/Documents/Research/Papers/Unpublished/English and Japanese folk song evolution automated analysis")
 
-#open packages
+#open packages (install first as required - #If Biostrings is not yet installed, enter the following commented out code: 
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
 library(plotrix)
 library(seqinr)
-library(Biostrings)
+library(Biostrings) 
+
+BiocManager::install("Biostrings")If not yet installed, follow installation instructions at 
 library(seriation)
 library(tidyr)
 library(ggplot2)
@@ -249,6 +253,30 @@ chisq.test(c(564,368))
 #X-squared = 41.219, df = 1, p-value = 1.361e-10
 
 
+##########
+######To automatically align a given pair of melodies:
+#set working drive
+
+#(if not yet installed/loaded, you will need to install/load them first) (copied for ease of training)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+install.packages("seqinr")
+
+library(seqinr)
+library(Biostrings)
+
+#load all 10,064 English and Japanese melodies
+melodies<-read.fasta("10064MelodySequences.fasta", seqtype = "AA")
+
+#Set ID number of top and bottom melodies (this example uses ID numbers 9464 and 9465, but these should be replaced with the ID numbers of interest)
+top.melody<-9464
+bottom.melody<-9465
+
+#save sequences as strings
+s3 <- c2s(melodies[[top.melody]])
+s4<- c2s(melodies[[bottom.melody]])
+
+(globalAligns3s4<-pairwiseAlignment(s3, s4, type="global", substitutionMatrix = NULL, gapOpening = -.8,gapExtension = -.2))
 
 ###########
 #Supplementary analyses
@@ -262,7 +290,7 @@ bronson<-read.fasta("Bronson4184NoPhraseGaps.fasta", seqtype = "AA")
 s3 <- c2s(bronson[[1]])
 s4<- c2s(bronson[[2]])
 
-(globalAligns3s4<-pairwiseAlignment(s3, s4, type="global", substitutionMatrix = NULL, gapOpening = -12,gapExtension = -6))
+(globalAligns3s4<-pairwiseAlignment(s3, s4, type="global", substitutionMatrix = NULL, gapOpening = -.8,gapExtension = -.2))
 
 # Print out the optimal global alignment and its score
 
@@ -270,7 +298,7 @@ pid(globalAligns3s4,type="PID4")
 #find percent identity
 
 
-globalAligns3s4 <- pairwiseAlignment(s3, s4, type="global", substitutionMatrix = NULL, gapOpening = -12,gapExtension = -6, scoreOnly = TRUE)
+globalAligns3s4 <- pairwiseAlignment(s3, s4, type="global", substitutionMatrix = NULL, gapOpening = -.8,gapExtension = -.2, scoreOnly = TRUE)
 
 generateSeqsWithMultinomialModel <- function(inputsequence, X)   
 {     
@@ -306,7 +334,7 @@ randomscores <- double(100) # Create a numeric vector with 100 elements
 for (i in 1:100)
    {
       score <- pairwiseAlignment(s3, randomseqs[i], type="global", substitutionMatrix = NULL,
-        gapOpening = -12, gapExtension = -6, scoreOnly = TRUE)
+        gapOpening = -.8, gapExtension = -.2, scoreOnly = TRUE)
       randomscores[i] <- score
    }
 
