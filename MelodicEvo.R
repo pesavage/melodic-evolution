@@ -140,7 +140,8 @@ write.table(as.matrix(ja.res$x_reordered),"Japanesereordered.txt")
 ##########Calculate evolutionary rates of highly-related melodic variant pairs
 
 #New automated code (initially for full sample)
-d<-read.csv("MelodicEvoSeq2.csv",header=TRUE,row.names=1)
+full<-read.csv("MelodicEvoSeq.csv",header=TRUE,row.names=1) #Import all 10,000+ sequences
+d<-s <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 s<-d
 
 #Calculate mutation rates for different functional types
@@ -275,6 +276,60 @@ t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)
 colMeans(data_wide,na.rm=TRUE)
 length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
 
+
+####Exploratory analysis of substitution matrix:
+indel<-colSums(m[,29:40],na.rm=TRUE) 
+sum(indel) #1798 indels total
+sub<-colSums(m[,41:106],na.rm=TRUE) 
+sum(sub) #769 substitutions total
+
+###Transition matrix
+n<-"C"
+Cn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"d"
+dn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"D"
+Dn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"e"
+en<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"E"
+En<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"F"
+Fn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"g"
+gn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"G"
+Gn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"a"
+an<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"A"
+An<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"b"
+bn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+n<-"B"
+Bn<-sum(str_count(m[,2], n))-(sum(c(str_count(m[,6], n),str_count(m[,7], n),str_count(m[,8], n),str_count(m[,9], n))))
+
+mat<-cbind(c(0,indel),c(NA,Cn,sub[1:11]),c(rep(NA,2),dn,sub[12:21]),c(rep(NA,3),Dn,sub[22:30]),c(rep(NA,4),en,sub[31:38]),c(rep(NA,5),En,sub[39:45]),c(rep(NA,6),Fn,sub[46:51]),c(rep(NA,7),gn,sub[52:56]),c(rep(NA,8),Gn,sub[57:60]),c(rep(NA,9),an,sub[61:63]),c(rep(NA,10),An,sub[64:65]),c(rep(NA,11),bn,sub[66]),c(rep(NA,12),Bn))
+rownames(mat)<-c("-","C","d","D","e","E","F","g","G","a","A","b","B")
+colnames(mat)<-c("-","C","d","D","e","E","F","g","G","a","A","b","B")
+plot(1:12,c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13]),type="line")
+write.csv(mat,"SubstitutionMatrix.csv") #Rename after running English and Japanese subsets
+
+
+full.mat<-as.matrix(as.dist(as.matrix(mat)))
+sub.mat<-full.mat[2:13,2:13] #exclude substitutions from matrix calculations
+unchanged<-c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13])
+changed<-colSums(sub.mat) 
+total<-changed+unchanged
+mutability<-changed/total
+trans.mat<-sub.mat*mutability/total #transition matrxi
+for(i in 1:12){
+  trans.mat[i,i]<-1-mutability[i]
+}
+write.csv(signif(trans.mat,digits=3),"TransitionMatrix.csv") #Rename after running English and Japanese subsets
+
+
+
 ###Subset analyses (repeat above from "mut<-s[,1:10]", changing definition of sample as follows):
 #Full English subset
 s <- subset(d, Language=="English")
@@ -312,27 +367,23 @@ s <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage
 s <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")  #40 pairs
 
 
-####Exploratory analysis of substitution matrix:
-#English subset
-e <- subset(d, Language=="English")
-e <- e[!duplicated(mut$PairNo),] #only using one value per pair, since substitution numbers are identical between variant
-indel<-colSums(e[,29:40],na.rm=TRUE) 
-sum(indel) #1053 indels
-sub<-colSums(e[,41:106],na.rm=TRUE) 
-sum(sub) #609 substitutions
 
-#Japanese subset
-j <- subset(d, Language=="Japanese")
-j <- s[!duplicated(mut$PairNo),] #only using one value per pair, since substitution numbers are identical between variant
-indel<-colSums(j[,29:40],na.rm=TRUE) 
-sum(indel) #745 indels
-sub<-colSums(j[,41:106],na.rm=TRUE) 
-sum(sub) #160 substitutions
+
 
 ###Map sample
 
 full<-read.csv("FullMelodies.csv",header=TRUE)
+
+#barplot by state/prefecture
 map<-as.data.frame(table(full$Country..County.State.))
+attach(map)
+map <- map[order(-Freq),]
+detach(map)
+barplot(map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
+
+#barplot by Child ballad no.
+e.full <- subset(full, Language=="English")
+map<-as.data.frame(table(e.full$Child.Ballad.no..NHK.Volume.no.))
 attach(map)
 map <- map[order(-Freq),]
 detach(map)
