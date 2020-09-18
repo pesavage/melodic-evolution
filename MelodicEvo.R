@@ -328,7 +328,72 @@ for(i in 1:12){
 }
 write.csv(signif(trans.mat,digits=3),"TransitionMatrix.csv") #Rename after running English and Japanese subsets
 
+#Test correlation between note frequency and mutability
+plot(log(total),mutability,ylim=c(0,max(mutability,na.rm=TRUE)),xlim=c(0,max(log(total),na.rm=TRUE)))
+text(log(total),mutability, names(total), cex=0.6, pos=1, col="red")
+cor.test(log(total),mutability,method="spearman",alternative="less")
 
+#####Calculate scale frequencies:
+#extract unique notes/scales
+#unique(strsplit(as.character(m[1,2]), "")[[1]])
+#m[1,143:148]<-unique(strsplit(as.character(m[1,2]), "")[[1]])
+m$C<-str_count(m[,2], "C")
+m$d<-str_count(m[,2], "d")
+m$D<-str_count(m[,2], "D")
+m$e<-str_count(m[,2], "e")
+m$E<-str_count(m[,2], "E")
+m$F<-str_count(m[,2], "F")
+m$g<-str_count(m[,2], "g")
+m$G<-str_count(m[,2], "G")
+m$a<-str_count(m[,2], "a")
+m$A<-str_count(m[,2], "A")
+m$b<-str_count(m[,2], "b")
+m$B<-str_count(m[,2], "B")
+m$sC<-ifelse(m$C>0,"C","")
+
+for(i in 1:length(m$C)){
+  m[i,143]<-ifelse(m[i,131]==0,m[i,142],paste0(c(m[i,142],"d"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,144]<-ifelse(m[i,132]==0,m[i,143],paste0(c(m[i,143],"D"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,145]<-ifelse(m[i,133]==0,m[i,144],paste0(c(m[i,144],"e"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,146]<-ifelse(m[i,134]==0,m[i,145],paste0(c(m[i,145],"E"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,147]<-ifelse(m[i,135]==0,m[i,146],paste0(c(m[i,146],"F"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,148]<-ifelse(m[i,136]==0,m[i,147],paste0(c(m[i,147],"g"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,149]<-ifelse(m[i,137]==0,m[i,148],paste0(c(m[i,148],"G"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,150]<-ifelse(m[i,138]==0,m[i,149],paste0(c(m[i,149],"a"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,151]<-ifelse(m[i,139]==0,m[i,150],paste0(c(m[i,150],"A"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,152]<-ifelse(m[i,140]==0,m[i,151],paste0(c(m[i,151],"b"),collapse = ""))
+}
+for(i in 1:length(m$C)){
+  m[i,153]<-ifelse(m[i,141]==0,m[i,152],paste0(c(m[i,152],"B"),collapse = ""))
+}
+names(m)[153] <- "scale"
+m$scaleNum<-str_length(m$scale)
+hist(m$scaleNum)
+
+#barplot of scales ordered by frequency
+map<-as.data.frame(table(m$scale))
+attach(map)
+map <- map[order(-Freq),]
+detach(map)
+barplot(map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
 
 ###Subset analyses (repeat above from "mut<-s[,1:10]", changing definition of sample as follows):
 #Full English subset
