@@ -200,9 +200,10 @@ barplot(semitone,names.arg=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","
 #mutational distance (grouped by 2-7 interval size)
 interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
 cor.test(interval,c(2:7),method="spearman",alternative="less")
-x <- barplot(interval,names.arg=c("2nd","3rd","4th","5th","6th","7th"),ylab=expression(paste("Number of substitutions")))
-
-
+#x <- barplot(interval,names.arg=c("2nd","3rd","4th","5th","6th","7th"),ylab=expression(paste("Number of substitutions")))
+x <- plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
+axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
+axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
 
 #For strong vs. weak function only
 data_wide <- mut[ , c(24:25,1)]
@@ -230,7 +231,7 @@ data_summary <- function(x) {
 data_wide[,1:2] %>% 
   gather(key="MeasureType", value="Val") %>%
   ggplot( aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",size=.2) + geom_jitter(binaxis='y', stackdir='center', size=0.4,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t tests
 t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)
@@ -267,7 +268,7 @@ data_summary <- function(x) {
 data_wide[,1:4] %>% 
   gather(key="MeasureType", value="Val") %>%
   ggplot( aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",size=.2) + geom_jitter(binaxis='y', stackdir='center', size=0.4,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t-tests
 t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE)
@@ -329,9 +330,12 @@ for(i in 1:12){
 write.csv(signif(trans.mat,digits=3),"TransitionMatrix.csv") #Rename after running English and Japanese subsets
 
 #Test correlation between note frequency and mutability
-plot(log(total),mutability,ylim=c(0,max(mutability,na.rm=TRUE)),xlim=c(0,max(log(total),na.rm=TRUE)))
-text(log(total),mutability, names(total), cex=0.6, pos=1, col="red")
-cor.test(log(total),mutability,method="spearman",alternative="less")
+#plot(log(total),mutability,ylim=c(0,max(mutability,na.rm=TRUE)),xlim=c(0,max(log(total),na.rm=TRUE)))
+plot(log10(total),log10(mutability),pch=16,ylim=c(log10(.05),log10(1)),xlim=c(log10(1),log10(10000)),xaxt="n",yaxt="n",ylab="Mutability",xlab="Note frequency")
+text(log10(total),log10(mutability), names(total), cex=1.5, pos=2, col="red")
+axis(2, at=c(log10(1),log10(.5),log10(.2),log10(.1),log10(.05)), labels=c(1,.5,.2,.1,.05))
+axis(1, at=c(log10(1),log10(10),log10(100),log10(1000),log10(10000)), labels=c(1,10,100,1000,10000))
+cor.test(total,mutability,method="spearman",alternative="less")
 
 #####Calculate scale frequencies:
 #extract unique notes/scales
@@ -386,7 +390,7 @@ for(i in 1:length(m$C)){
 }
 names(m)[153] <- "scale"
 m$scaleNum<-str_length(m$scale)
-hist(m$scaleNum)
+barplot(table(m$scaleNum)) #hist(m$scaleNum)
 
 #barplot of scales ordered by frequency
 map<-as.data.frame(table(m$scale))
@@ -394,6 +398,14 @@ attach(map)
 map <- map[order(-Freq),]
 detach(map)
 barplot(map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
+
+
+table(m$scale,m$Language)
+#double barplot (draft code, not working, not sure if needed)
+#scale<-as.matrix(table(m$scale,m$Language))
+#for(i in 1:length(scale[,1])){
+#  scale[i,3]<-ifelse(scale[i,2]==0,"red","blue")
+#}
 
 ###Subset analyses (repeat above from "mut<-s[,1:10]", changing definition of sample as follows):
 #Full English subset
