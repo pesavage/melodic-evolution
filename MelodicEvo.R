@@ -28,7 +28,6 @@ library(phangorn)
 
 ##########Calculate evolutionary rates of highly-related melodic variant pairs
 
-#New automated code (initially for full sample)
 full<-read.csv("MelodicEvoSeq.csv",header=TRUE,row.names=1) #Import all 10,000+ sequences
 d<-s <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 s<-d
@@ -73,13 +72,13 @@ semitone<-colSums(m[,21:31],na.rm=TRUE)
 
 #grouped by 2-7 interval size
 interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
-cor.test(interval,c(2:7),method="spearman",alternative="less")
+print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
 x <- plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
 
 #grouped by # of semitones
-cor.test(semitone,c(1:11),method="spearman",alternative="less")
+print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
 x <- plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
@@ -118,8 +117,8 @@ data_wide[,1:2] %>%
   geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t tests
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE) #paired t-test
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE) #unpaired t-test
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE)) #unpaired t-test
 
 
 #For all four functional types
@@ -147,11 +146,12 @@ data_wide[,1:4] %>%
   geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t-tests
-t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE)
-t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE)
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)
+print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
+print(t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE))
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE))
 colMeans(data_wide,na.rm=TRUE)
 length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
+
 #########
 
 #Full Japanese subset
@@ -191,13 +191,13 @@ semitone<-colSums(m[,21:31],na.rm=TRUE)
 
 #grouped by 2-7 interval size
 interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
-cor.test(interval,c(2:7),method="spearman",alternative="less")
+print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
 x <- plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
 
 #grouped by # of semitones
-cor.test(semitone,c(1:11),method="spearman",alternative="less")
+print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
 x <- plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
@@ -236,8 +236,8 @@ data_wide[,1:2] %>%
   geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t tests
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE) #paired t-test
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE) #unpaired t-test
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE)) #unpaired t-test
 
 
 #For all four functional types
@@ -265,11 +265,12 @@ data_wide[,1:4] %>%
   geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t-tests
-t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE)
-t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE)
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)
+print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
+print(t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE))
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE))
 colMeans(data_wide,na.rm=TRUE)
 length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
+
 
 #########
 
@@ -324,9 +325,9 @@ source("MelodicEvoAnalysis.R")
 
 #Descriptive stats for sensitivity analyses
 sens<-read.csv("sensitivity.csv")
-colMeans(sens,na.rm=TRUE) #Means: Substitution -0.9343750 ; Frequency  -0.6621429 ;    Function; 7.6227273 
+colMeans(sens,na.rm=TRUE) #Means: Substitution -0.9343750 ; Frequency  -0.7442857 ;    Function; 7.6227273 
 std.error(sens[,1],na.rm=TRUE) #Substitution r SE = 0.01655719
-std.error(sens[,2],na.rm=TRUE) #Frequency r SE = 0.08553759
+std.error(sens[,2],na.rm=TRUE) #Frequency r SE = 0.05159771
 std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9414673
 
 

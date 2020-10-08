@@ -33,13 +33,13 @@ semitone<-colSums(m[,21:31],na.rm=TRUE)
 
 #grouped by 2-7 interval size
 interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
-cor.test(interval,c(2:7),method="spearman",alternative="less")
+print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
 x <- plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
 
 #grouped by # of semitones
-cor.test(semitone,c(1:11),method="spearman",alternative="less")
+print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
 x <- plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
@@ -78,8 +78,8 @@ data_wide[,1:2] %>%
   geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t tests
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE) #paired t-test
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE) #unpaired t-test
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE)) #unpaired t-test
 
 
 #For all four functional types
@@ -107,9 +107,9 @@ data_wide[,1:4] %>%
   geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
 
 #t-tests
-t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE)
-t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE)
-t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)
+print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
+print(t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE))
+print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE))
 colMeans(data_wide,na.rm=TRUE)
 length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
 
@@ -147,23 +147,24 @@ Bn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),s
 mat<-cbind(c(0,indel),c(NA,Cn,sub[1:11]),c(rep(NA,2),dn,sub[12:21]),c(rep(NA,3),Dn,sub[22:30]),c(rep(NA,4),en,sub[31:38]),c(rep(NA,5),En,sub[39:45]),c(rep(NA,6),Fn,sub[46:51]),c(rep(NA,7),gn,sub[52:56]),c(rep(NA,8),Gn,sub[57:60]),c(rep(NA,9),an,sub[61:63]),c(rep(NA,10),An,sub[64:65]),c(rep(NA,11),bn,sub[66]),c(rep(NA,12),Bn))
 rownames(mat)<-c("-","C","d","D","e","E","F","g","G","a","A","b","B")
 colnames(mat)<-c("-","C","d","D","e","E","F","g","G","a","A","b","B")
-write.csv(mat,"SubstitutionMatrix.csv") #Rename after running English and Japanese subsets
 
 #calculate mutability
 full.mat<-as.matrix(as.dist(as.matrix(mat)))
 sub.mat<-full.mat[2:13,2:13] #exclude substitutions from matrix calculations
 unchanged<-c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13])
-changed<-colSums(sub.mat) 
+changed<-colSums(full.mat)[2:13] 
 total<-changed+unchanged
 (mutability<-changed/total)
 
-#Test correlation between note frequency and mutability
-plot(log10(total),log10(mutability),pch=16,ylim=c(log10(.05),log10(1)),xlim=c(log10(1),log10(10000)),xaxt="n",yaxt="n",ylab="Mutability",xlab="Note frequency")
-text(log10(total),log10(mutability), names(total), cex=1.5, pos=2, col="red")
-axis(2, at=c(log10(1),log10(.5),log10(.2),log10(.1),log10(.05)), labels=c(1,.5,.2,.1,.05))
-axis(1, at=c(log10(1),log10(10),log10(100),log10(1000),log10(10000)), labels=c(1,10,100,1000,10000))
-cor.test(total,mutability,method="spearman",alternative="less")
+mat<-rbind(mat,c(NA,mutability))
+write.csv(mat,"SubstitutionMatrix.csv") #Rename after running English and Japanese subsets
 
+#Test correlation between note frequency and mutability
+plot(log10(total),log10(mutability),pch=16,ylim=c(log10(.1),log10(1)),xlim=c(log10(1),log10(10000)),xaxt="n",yaxt="n",ylab="Mutability",xlab="Note frequency")
+text(log10(total),log10(mutability), names(total), cex=1.5, pos=2, col="red")
+axis(2, at=c(log10(1),log10(.5),log10(.2),log10(.1)), labels=c(1,.5,.2,.1))
+axis(1, at=c(log10(1),log10(10),log10(100),log10(1000),log10(10000)), labels=c(1,10,100,1000,10000))
+print(cor.test(total,mutability,method="spearman",alternative="less"))
 
 
 #####Calculate scale frequencies:
