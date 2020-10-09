@@ -7,3 +7,5 @@ To run the analyses, run the master file "MelodicEvo.R" in R or R Studio. Severa
 source("PID.R")
 
 source("Dist.R")
+
+Because the main MelodicEvoSeq.csv.csv file used in analyses can't preserve the detailed formatting (e.g., bold, italic, etc. for functional positions), a MelodicEvoSeq.csv.xlsx file with formatting for the highly related pairs is also included for convenience.
