@@ -72,10 +72,10 @@ data_summary <- function(x) {
 }
 
 #plot
-data_wide[,1:2] %>% 
+print(data_wide[,1:2] %>% 
   gather(key="MeasureType", value="Val") %>%
   ggplot( aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold")))
 
 #t tests
 print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
@@ -101,10 +101,10 @@ sum(is.na(data_wide$OrnMutRate)) #224 pairs without ornamental notes
 
 #Make violin plot
 
-data_wide[,1:4] %>% 
+print(data_wide[,1:4] %>% 
   gather(key="MeasureType", value="Val") %>%
   ggplot( aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold")))
 
 #t-tests
 print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
