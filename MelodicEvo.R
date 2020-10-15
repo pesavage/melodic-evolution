@@ -1,4 +1,4 @@
-setwd("/Users/pesavage/Documents/Research/Papers/Unpublished/Savage et al. (in prep) English and Japanese folk song evolution automated analysis/melodic-evolution-master")
+#setwd("/Users/pesavage/Documents/Research/Papers/Unpublished/Savage et al. (in prep) English and Japanese folk song evolution automated analysis/melodic-evolution-master")
 
 #open packages (install first as required - #If Biostrings is not yet installed, enter the following commented out code: 
 #if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -106,3 +106,7 @@ std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9414673
 
 ##Map samples
 #source("MelodyMap.R") #(Uncomment this once I've finished tweaking map scripts)
+
+# Print R version and packages
+sessionInfo()
+Sys.time()
