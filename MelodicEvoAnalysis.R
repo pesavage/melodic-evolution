@@ -34,13 +34,13 @@ semitone<-colSums(m[,21:31],na.rm=TRUE)
 #grouped by 2-7 interval size
 interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
 print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
-x <- plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
+plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
 
 #grouped by # of semitones
 print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
-x <- plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
+plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
 axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
 axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
 
