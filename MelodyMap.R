@@ -1,75 +1,143 @@
-##Map samples (subscript of "MelodicEvo.R")
+##### import library #####
+library(dplyr)
+library(GADMTools)
 
-###Map samples
 
-#barplot by state/prefecture
-map<-as.data.frame(table(full$NAME_1))
+##### load dataset #####
+full<-read.csv("https://raw.githubusercontent.com/pesavage/melodic-evolution/master/MelodicEvoSeq.csv",header=TRUE,row.names=1) #Import all 10,000+ sequences
+s <- d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
+
+map <- as.data.frame(table(full$NAME_1))
 map <- rename(map, NAME_1 = Var1)
 attach(map)
 map <- map[order(-Freq),]
 detach(map)
 barplot(map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
-write.csv(map,"CountySampleNos.csv")
+write.csv(map,"MapSampleNos.csv")
+map <- read.csv("MapSampleNos.csv",row.names=1)
 
-map<-read.csv("CountySampleNos.csv",row.names=1)
+sub.map <- as.data.frame(table(d$NAME_1))
+sub.map <- rename(sub.map, NAME_1 = Var1)
+attach(sub.map)
+sub.map <- sub.map[order(-Freq),]
+detach(sub.map)
+barplot(sub.map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
+write.csv(sub.map,"SubMapSampleNos.csv")
+sub.map <- read.csv("SubMapSampleNos.csv",row.names=1)
+
+
+##### Figure of Japan (Single country) #####
+
+BASEFILE <- "./GADM"
+BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
+ja <- gadm_sp.loadCountries("JPN", level = 1, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
+
+jards<-full.jards<-readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_JPN_1_sp.rds")) 
+jards@data <- merge(jards@data, map, by="NAME_1", all.x=TRUE)
+jards@data$Freq[is.na(jards@data$Freq)] <- 0
+jadat <- data.frame(NAME_1=jards@data$NAME_1, Freq=jards@data$Freq)
+
+choropleth(ja, jadat, adm.join = "NAME_1",
+               value = "Freq",
+               breaks = "sd",
+               palette="Oranges",
+               legend = "Number of melodies",
+               title="Number of melodies per region")
+
+
+##### Figure of US & Canada (Multiple countries) #####
+BASEFILE <- "./GADM"
+BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
+usacan <- gadm_sp.loadCountries(c("USA", "CAN"), level = 1, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
+
+usrds <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_USA_1_sp.rds")) 
+usrds@data <- merge(usrds@data, map, by="NAME_1", all.x=TRUE)
+usrds@data$Freq[is.na(usrds@data$Freq)] <- 0
+usdat <- data.frame(NAME_1=usrds@data$NAME_1, Freq=usrds@data$Freq)
+
+cards <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_CAN_1_sp.rds")) 
+cards@data <- merge(cards@data, map, by="NAME_1", all.x=TRUE)
+cards@data$Freq[is.na(cards@data$Freq)] <- 0
+cadat <- data.frame(NAME_1=cards@data$NAME_1, Freq=cards@data$Freq)
+
+uscadat <- rbind(usdat, cadat)
+
+choropleth(usacan, uscadat, adm.join = "NAME_1",
+               value = "Freq",
+               breaks = "sd",
+               palette="Oranges",
+               legend = "Number of melodies",
+               title="Number of melodies per region")
+
+##### Figure of UK (Single country) #####
+BASEFILE <- "./GADM"
+BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
+uk <- gadm_sp.loadCountries("GBR", level = 1, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
+
+ukrds<-readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_GBR_1_sp.rds")) 
+ukrds@data <- merge(ukrds@data, map, by="NAME_1", all.x=TRUE)
+ukrds@data$Freq[is.na(ukrds@data$Freq)] <- 0
+ukdat <- data.frame(NAME_1=ukrds@data$NAME_1, Freq=ukrds@data$Freq)
+
+choropleth(uk, ukdat, adm.join = "NAME_1",
+           value = "Freq",
+           breaks = "sd",
+           palette="Oranges",
+           legend = "Number of melodies",
+           title="Number of melodies per region")
+
+##Map highly related melodies only
 
 #Japan
-ja<- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_JPN_1_sp.rds")) 
-#ja$NAME_1 <- as.factor(iconv(as.character(ja$NAME_1), "latin1", "UTF-8"))  # Convert the encoding to UTF-8 in order to avoid the problems with 'tildes' and 'eñes'.
-ja@data<- merge(ja@data, map,by="NAME_1",all.x=TRUE)
-ja@data$Freq[is.na(ja@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(ja, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(ja@data$NAME_1)), col = "#081D58", main = "Melody sample size (Japan)")
+sub.jadat <- merge(jadat, sub.map, by="NAME_1", all.x=TRUE)
+sub.jadat$Freq.y[is.na(sub.jadat$Freq.y)] <- 0
 
-#USA
-us <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_USA_1_sp.rds")) 
-#us$NAME_1 <- as.factor(iconv(as.character(us$NAME_1), "latin1", "UTF-8"))  # Convert the encoding to UTF-8 in order to avoid the problems with 'tildes' and 'eñes'.
-us@data<- merge(us@data, map,by="NAME_1",all.x=TRUE)
-us@data$Freq[is.na(us@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(us, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(us@data$NAME_1)), col = "#081D58", main = "Melody sample size")
+choropleth(ja, sub.jadat, adm.join = "NAME_1",
+           value = "Freq.y",
+           breaks = "sd",
+           palette="Oranges",
+           legend = "Number of melodies",
+           title="Number of melodies per region")
 
-#Canada
-can <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_CAN_1_sp.rds")) 
-can$NAME_1 <- as.factor(iconv(as.character(can$NAME_1), "latin1", "UTF-8"))  # Convert the encoding to UTF-8 in order to avoid the problems with 'tildes' and 'eñes'.
-can@data<- merge(can@data, map,by="NAME_1",all.x=TRUE)
-can@data$Freq[is.na(can@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(can, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(us@data$NAME_1)), col = "#081D58", main = "Melody sample size")
+#US + Canada
+sub.uscadat <- merge(uscadat, sub.map, by="NAME_1", all.x=TRUE)
+sub.uscadat$Freq.y[is.na(sub.uscadat$Freq.y)] <- 0
+
+choropleth(usacan, sub.uscadat, adm.join = "NAME_1",
+           value = "Freq.y",
+           breaks = "sd",
+           palette="Oranges",
+           legend = "Number of melodies",
+           title="Number of melodies per region")
 
 #UK
-uk <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_GBR_1_sp.rds")) 
-#uk$NAME_1 <- as.factor(iconv(as.character(uk$NAME_1), "latin1", "UTF-8"))  # Convert the encoding to UTF-8 in order to avoid the problems with 'tildes' and 'eñes'.
-uk@data<- merge(uk@data, map,by="NAME_1",all.x=TRUE)
-uk@data$Freq[is.na(uk@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(uk, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(uk@data$NAME_1)), col = "#081D58", main = "Melody sample size")
+sub.ukdat <- merge(ukdat, sub.map, by="NAME_1", all.x=TRUE)
+sub.ukdat$Freq.y[is.na(sub.ukdat$Freq.y)] <- 0
+choropleth(uk, sub.ukdat, adm.join = "NAME_1",
+           value = "Freq.y",
+           breaks = "sd",
+           palette="Oranges",
+           legend = "Number of melodies",
+           title="Number of melodies per region")
 
+##FOLLOWING CODE NOT WORKING - BECAUSE THERE IS ONLY ONE REGION AND THUS NO VARIATION TO PLOT?
+#ERROR MESSAGE: "Error in classIntervals(.data[, .value], n = .steps, style = breaks) : single unique value"
 
-###Need to combine UK, Ireland, & Isle of Man into one "British Isles" map
+###Figure of Ireland (level 0 administrative region only)#### 
+map$NAME_0 <- map$NAME_1 #Change names from NAME_1 to NAME_0
 
-#Ireland
-irl <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_IRL_0_sp.rds")) 
-irl$NAME_1 <- irl$NAME_0
-#irl$NAME_1 <- as.factor(iconv(as.character(irl$NAME_1), "latin1", "UTF-8"))  # Convert the encoding to UTF-8 in order to avoid the problems with 'tildes' and 'eñes'.
-irl@data<- merge(irl@data, map,by="NAME_1",all.x=TRUE)
-irl@data$Freq[is.na(irl@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(irl, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(uk@data$NAME_1)), col = "#081D58", main = "Melody sample size")
+BASEFILE <- "./GADM"
+BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
+irl <- gadm_sp.loadCountries("IRL", level = 0, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
 
-#Isle of Man
-  imn <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_IMN_0_sp.rds")) 
-imn$NAME_1 <- imn$NAME_0
-imn$NAME_1 <- as.factor(iconv(as.character(imn$NAME_1), "latin1", "UTF-8"))  # Convert the encoding to UTF-8 in order to avoid the problems with 'tildes' and 'eñes'.
-imn@data<- merge(imn@data, map,by="NAME_1",all.x=TRUE)
-imn@data$Freq[is.na(imn@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(imn, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(uk@data$NAME_1)), col = "#081D58", main = "Melody sample size")
+irlrds <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_IRL_0_sp.rds")) 
+irlrds@data <- merge(irlrds@data, map, by="NAME_0", all.x=TRUE)
+irlrds@data$Freq[is.na(irlrds@data$Freq)] <- 0
+irldat <- data.frame(NAME_0=irlrds@data$NAME_0, Freq=irlrds@data$Freq)
 
-
-
-#####Following is some code I've attempted to join multiple countries into a single plot, so far without complete success:
-## load a file from GADM (you just have to specify the countries "special part" of the file name, like "ARG" for Argentina. Optionally you can specify which level you want to have
-Brit = gadm_sp_loadCountries(c("GBR","IRL"), level=1, basefile="./")
-NAm = gadm_sp_loadCountries(c("USA","CAN"), level=1, basefile="./")
-
-NAm$spdf@data<- merge(NAm$spdf@data, map,by.x="NAME_1",by.y="Var1",all.x=TRUE)
-NAm$spdf@data$Freq[is.na(NAm$spdf@data$Freq)] <- 0 #(Add 0 for states without samples)
-spplot(NAm, "Freq", col.regions = colorRampPalette(brewer.pal(9, "YlGnBu"))(length(NAm$spdf@data$NAME_1)), col = "#081D58", main = "Melody sample size (N. America)")
-
-DAT<- merge(NAm$spdf@data,map,by.x="NAME_1",by.y="Var1",all.x=TRUE)
-
+choropleth(irl, irldat, adm.join = "NAME_0",
+           value = "Freq",
+           breaks = "sd",
+           palette="Oranges",
+           legend = "Number of melodies",
+           title="Number of melodies per region")
