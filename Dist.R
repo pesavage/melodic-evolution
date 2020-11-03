@@ -1,6 +1,12 @@
 #subscript of MelodicEvo.R that identifies highly related pairs of melodies
 
-#read back in distance matrices calculated by "PID.R" subscript and identify highly related (>=85%) melodic variants:
+#Download distance matrices calculated by "PID.R" subscript:
+require("httr")
+
+data<-GET('https://osf.io/759dq//?action=download', write_disk('EnglishDist.txt', overwrite = TRUE)) #Distance matrix of English songs
+data<-GET('https://osf.io/43kxu//?action=download', write_disk('JapanDist.txt', overwrite = TRUE)) #Distance matrix of Japanese songs
+
+#read back in  and identify highly related (>=85%) melodic variants:
 
 #English folk songs
 eng.d<-as.dist(as.matrix(read.table("EnglishDist.txt"))) 
@@ -91,8 +97,8 @@ e<-read.csv("EngHighlyRelatedPairs.csv",header=TRUE)
 e<-rbind(e,j)
 e$X<-row.names(e)
 full<-full[,1:8]
-full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X1", all.x = TRUE)
-full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X2", all.x = TRUE)
+full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X1", all.x = TRUE) #NB: during code review we had trouble with R reading in data with different column names (e.g., "ï..Overall.ID.No."- will try to improve this using column indices to avoid such problems
+full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X2", all.x = TRUE) #NB: during code review we had trouble with R reading in data with different column names - will try to improve this using column indices to avoid such problems
 full$PairNo<-ifelse(is.na(full$X.x), full$X.y, full$X.x)
 full$PairID<-ifelse(is.na(full$X2), full$X1, full$X2)
 full$PID<-ifelse(is.na(full$dist.x), full$dist.y, full$dist.x)

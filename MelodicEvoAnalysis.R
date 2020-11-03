@@ -12,7 +12,7 @@ mut$nOrnMut<-str_length(mut[,6])
 mut$nFinMut<-str_length(mut[,7])
 mut$nStrMut<-str_length(mut[,8])
 mut$nUnStrMut<-str_length(mut[,9])
-mut[is.na(mut)] <- 0
+
 mut$FinMutRate<-mut$nFinMut/mut$nFin
 mut$StrMutRate<-mut$nStrMut/mut$nStr
 mut$UnStrRate<-mut$nUnStrMut/mut$nUnStr
@@ -20,10 +20,10 @@ mut$OrnMutRate<-mut$nOrnMut/mut$nOrn
 mut$StrongFunctionRate<-(mut$nFinMut+mut$nStrMut)/(mut$nFin+mut$nStr)
 mut$WeakFunctionRate<-(mut$nUnStrMut+mut$nOrnMut)/(mut$nUnStr+mut$nOrn)
 
-sum(mut[,15:18]) #3462 mutations total
+sum(mut[,15:18]) #no. of total mutations 
 length(mut$FinMutRate)
-sum(!is.na(mut$OrnMutRate)) #149 melodies with ornamental notes
-sum(is.na(mut$OrnMutRate)) #507 melodies without ornamental notes
+sum(!is.na(mut$OrnMutRate)) #no. of melodies with ornamental notes
+sum(is.na(mut$OrnMutRate)) #no. of melodies without ornamental notes
 
 ####Compare/plot
 
@@ -58,7 +58,7 @@ for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
 data_wide<-as.data.frame(out)
 
 #Check sample sizes
-length(data_wide$StrongFunctionRate) #328 pairs
+length(data_wide$StrongFunctionRate) #no. of pairs
 
 
 #Make violin plot
@@ -94,9 +94,9 @@ for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
 data_wide<-as.data.frame(out)
 
 #Check sample sizes
-length(data_wide$FinMutRate) #328 pairs
-sum(!is.na(data_wide$OrnMutRate)) #104 pairs with ornamental notes
-sum(is.na(data_wide$OrnMutRate)) #224 pairs without ornamental notes
+length(data_wide$FinMutRate) #no. of pairs
+sum(!is.na(data_wide$OrnMutRate)) #no. of pairs with ornamental notes
+sum(is.na(data_wide$OrnMutRate)) #no. of pairs without ornamental notes
 
 
 #Make violin plot
@@ -115,10 +115,11 @@ length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final m
 
 ####Substitution matrix:
 indel<-colSums(m[,32:43],na.rm=TRUE) 
-sum(indel) #1798 indels total
+sum(indel) #total no. of indels
 sub<-colSums(m[,44:109],na.rm=TRUE) 
-sum(sub) #769 substitutions total
+sum(sub) #total no. of substitutions
 
+###The following section creates a substitution matrix in which the diagonal represents the number of times a given note appears unchanged in both melodies from a highly related pair, while the other cells represent the sum of all substitutions involving each possible pair of notes. The diagonal is calculated by subtracting the sum of all substitutions and indels from the total number of times a given note appears.
 n<-"C"
 Cn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
 n<-"d"
@@ -169,8 +170,8 @@ print(cor.test(total,mutability,method="spearman",alternative="less"))
 
 #####Calculate scale frequencies:
 #extract unique notes/scales
-#unique(strsplit(as.character(m[1,2]), "")[[1]])
-#m[1,143:148]<-unique(strsplit(as.character(m[1,2]), "")[[1]])
+
+
 m$C<-str_count(m[,13], "C")
 m$d<-str_count(m[,13], "d")
 m$D<-str_count(m[,13], "D")

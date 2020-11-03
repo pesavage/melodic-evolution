@@ -36,7 +36,7 @@ sensitivity.csv<-"https://raw.githubusercontent.com/pesavage/melodic-evolution/m
 
 ##########Calculate evolutionary rates of highly-related melodic variant pairs
 
-full<-read.csv("https://raw.githubusercontent.com/pesavage/melodic-evolution/master/MelodicEvoSeq.csv",header=TRUE,row.names=1) #Import all 10,000+ sequences
+full<-read.csv("https://raw.githubusercontent.com/pesavage/melodic-evolution/master/MelodicEvoSeq.csv",header=TRUE,row.names=1) #Imports all 10,000+ sequences. The highly related pairs were automatically identified using the scripts in "PID.R" and "Dist.R", but a lot of manual work was required to align related pairs, code functional positions, and count the numbers and sizes of all mutation types to create the "MelodicEvoSeq.csv" file used for subsequent analyses   
 s <- d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 
 
