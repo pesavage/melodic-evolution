@@ -119,25 +119,3 @@ choropleth(uk, sub.ukdat, adm.join = "NAME_1",
            palette="Oranges",
            legend = "Number of melodies",
            title="Number of melodies per region")
-
-##FOLLOWING CODE NOT WORKING - BECAUSE THERE IS ONLY ONE REGION AND THUS NO VARIATION TO PLOT?
-#ERROR MESSAGE: "Error in classIntervals(.data[, .value], n = .steps, style = breaks) : single unique value"
-
-###Figure of Ireland (level 0 administrative region only)#### 
-map$NAME_0 <- map$NAME_1 #Change names from NAME_1 to NAME_0
-
-BASEFILE <- "./GADM"
-BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
-irl <- gadm_sp.loadCountries("IRL", level = 0, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
-
-irlrds <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_IRL_0_sp.rds")) 
-irlrds@data <- merge(irlrds@data, map, by="NAME_0", all.x=TRUE)
-irlrds@data$Freq[is.na(irlrds@data$Freq)] <- 0
-irldat <- data.frame(NAME_0=irlrds@data$NAME_0, Freq=irlrds@data$Freq)
-
-choropleth(irl, irldat, adm.join = "NAME_0",
-           value = "Freq",
-           breaks = "sd",
-           palette="Oranges",
-           legend = "Number of melodies",
-           title="Number of melodies per region")

@@ -67,17 +67,17 @@ s <- subset(e, Year>=median(e$Year,na.rm=TRUE)) #newer sample
 source(MelodicEvoAnalysis.R)
 
 #Singer
-s <- subset(e, Same.singer=="Y") #21 pairs 
+s <- subset(e, Same.singer=="Y") 
 source(MelodicEvoAnalysis.R)
 
-s <- subset(e, Same.singer=="N") #160 pairs
+s <- subset(e, Same.singer=="N") 
 source(MelodicEvoAnalysis.R)
 
 #Coder
-s <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")  #122 pairs
+s <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")
 source(MelodicEvoAnalysis.R)
 
-s <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")  #120 pairs
+s <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")
 source(MelodicEvoAnalysis.R)
 
 #For Japanese sample
@@ -91,25 +91,25 @@ s <- subset(j, Year>=median(j$Year,na.rm=TRUE))
 source(MelodicEvoAnalysis.R)
 
 #Singer
-s <- subset(j, Same.singer=="Y") #23 pairs
+s <- subset(j, Same.singer=="Y")
 source(MelodicEvoAnalysis.R)
 
-s <- subset(j, Same.singer=="N") #21 pairs
+s <- subset(j, Same.singer=="N")
 source(MelodicEvoAnalysis.R)
 
 #Coder
-s <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")  #46 pairs
+s <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")
 source(MelodicEvoAnalysis.R)
 
-s <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")  #40 pairs
+s <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")
 source(MelodicEvoAnalysis.R)
 
 #Descriptive stats for sensitivity analyses
 sens<-read.csv(sensitivity.csv)
-colMeans(sens,na.rm=TRUE) #Means: Substitution -0.9343750 ; Frequency  -0.7442857 ;    Function; 7.6227273 
-std.error(sens[,1],na.rm=TRUE) #Substitution r SE = 0.01655719
-std.error(sens[,2],na.rm=TRUE) #Frequency r SE = 0.05159771
-std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9414673
+colMeans(sens,na.rm=TRUE) #Means: Substitution -0.9312500 ; Frequency  -0.7071429 ;    Function; 7.6863636 
+std.error(sens[,1],na.rm=TRUE) #Substitution r SE = 0.0163012
+std.error(sens[,2],na.rm=TRUE) #Frequency r SE = 0.07389054
+std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9381823
 
 
 ##Map samples
