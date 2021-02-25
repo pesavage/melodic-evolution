@@ -1,9 +1,9 @@
-
+install.packages(c('plotrix', 'seqinr', 'Biostrings', 'seriation', 'tidyr', 'ggplot2', 'dplyr', 'varhandle', 'stringr', 'seqRFLP', 'pwr', 'lsr', 'sp', 'RColorBrewer', 'phangorn', 'GADMTools'))
 
 #open packages (install first as required - #If Biostrings is not yet installed, enter the following commented out code: 
-#if (!requireNamespace("BiocManager", quietly = TRUE))
-#    install.packages("BiocManager")
-# BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
+if (!requireNamespace("BiocManager", quietly = TRUE))
+   install.packages("BiocManager")
+BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
 
 #open packages
 library(plotrix)
@@ -30,7 +30,7 @@ PID.R<-"https://raw.githubusercontent.com/pesavage/melodic-evolution/master/PID.
 Dist.R<-"https://raw.githubusercontent.com/pesavage/melodic-evolution/master/Dist.R"
 sensitivity.csv<-"https://raw.githubusercontent.com/pesavage/melodic-evolution/master/sensitivity.csv"
 
-#source(PID.R) #uncomment this to recalculate distance matrices of PID among the 10,064 melodic variants, but be aware that this will take up to a month on a standard computer!
+source(PID.R) #uncomment this to recalculate distance matrices of PID among the 10,064 melodic variants, but be aware that this will take up to a month on a standard computer!
 
 #source(Dist.R) # uncomment this to re-dentify highly related pairs of melodies
 
