@@ -1,9 +1,10 @@
 
 
-#open packages (install first as required - #If Biostrings is not yet installed, enter the following commented out code: 
-#if (!requireNamespace("BiocManager", quietly = TRUE))
-#    install.packages("BiocManager")
-# BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
+#open packages (install first as required - 
+#If Biostrings is already installed you can comment out the following three lines of code: 
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+ BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
 
 #open packages
 library(plotrix)
