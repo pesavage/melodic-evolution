@@ -5,3 +5,5 @@
 *.Rproj
 SubstitutionMatrix.csv
 Rplots.pdf
+figures/
+results/

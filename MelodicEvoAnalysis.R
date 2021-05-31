@@ -1,7 +1,15 @@
 #### subscript of "MelodicEvo.R"
 
+#Define function for mean and 95% confidence interval
+data_summary <- function(x) {
+  m <- mean(x)
+  ymin <- m-std.error(x)*1.96
+  ymax <- m+std.error(x)*1.96
+  return(c(y=m,ymin=ymin,ymax=ymax))
+}
+
 # Calculate mutation rates for different functional types
-MelodicEvoAnalysis = function(s){
+MelodicEvoAnalysis = function(s, name){
   mut<-s[,c(1,13:20)]
   mut$nFull<-str_length(mut[,2])
   mut$nOrn<-str_length(mut[,3])
@@ -31,19 +39,27 @@ MelodicEvoAnalysis = function(s){
   m <- s[!duplicated(mut$PairNo),] #only using one value per pair, since substitution numbers are identical between variant
   semitone<-colSums(m[,21:31],na.rm=TRUE) 
   
+  semitones_df = m[,21:31]
+  save(semitones_df, file = "semitones.RData")
+  
   #grouped by 2-7 interval size
   interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
   print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
+  
+  jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
   plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
   axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
   axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
+  dev.off()
   
   #grouped by # of semitones
   print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
+  
+  jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
   plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
   axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
   axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
-  
+  dev.off()
   
   #Function
   #Strong vs. weak
@@ -59,23 +75,21 @@ MelodicEvoAnalysis = function(s){
   
   #Check sample sizes
   length(data_wide$StrongFunctionRate) #no. of pairs
-  
-  
+
   #Make violin plot
   
-  #Define function for mean and 95% confidence interval
-  data_summary <- function(x) {
-    m <- mean(x)
-    ymin <- m-std.error(x)*1.96
-    ymax <- m+std.error(x)*1.96
-    return(c(y=m,ymin=ymin,ymax=ymax))
-  }
-  
   #plot
-  print(data_wide[,1:2] %>% 
-          gather(key="MeasureType", value="Val") %>%
-          ggplot( aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-          geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,0.4) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold")))
+  violin_df = data_wide[,1:2] %>% 
+          gather(key="MeasureType", value="Val")
+  
+  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"))
+  ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
+          geom_violin() +
+          stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
+          geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
+          ylim(0,0.4) + 
+          theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  dev.off()
   
   #t tests
   print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
@@ -99,11 +113,17 @@ MelodicEvoAnalysis = function(s){
   sum(is.na(data_wide$OrnMutRate)) #no. of pairs without ornamental notes
   
   #Make violin plot
+  violin_df = data_wide[,1:4] %>% 
+          gather(key="MeasureType", value="Val") 
   
-  print(data_wide[,1:4] %>% 
-          gather(key="MeasureType", value="Val") %>%
-          ggplot( aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-          geom_violin() +stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + ylim(0,1) + theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold")))
+  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"))
+  ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
+          geom_violin() + 
+          stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
+          geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
+          ylim(0,1) + 
+          theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  dev.off()
   
   #t-tests
   print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
@@ -157,20 +177,23 @@ MelodicEvoAnalysis = function(s){
   (mutability<-changed/total)
   
   mat<-rbind(mat,c(NA,mutability))
-  write.csv(mat,"SubstitutionMatrix.csv") #Rename after running English and Japanese subsets
+  write.csv(mat,
+            paste0("results/", name, "_SubstitutionMatrix.csv")
+            )
   
   #Test correlation between note frequency and mutability
+  jpeg(paste0("figures/Frequency_byMutability", name, ".jpeg"))
   plot(log10(total),log10(mutability),pch=16,ylim=c(log10(.1),log10(1)),xlim=c(log10(1),log10(10000)),xaxt="n",yaxt="n",ylab="Mutability",xlab="Note frequency")
   text(log10(total),log10(mutability), names(total), cex=1.5, pos=2, col="red")
   axis(2, at=c(log10(1),log10(.5),log10(.2),log10(.1)), labels=c(1,.5,.2,.1))
   axis(1, at=c(log10(1),log10(10),log10(100),log10(1000),log10(10000)), labels=c(1,10,100,1000,10000))
+  dev.off()
+  
   print(cor.test(total,mutability,method="spearman",alternative="less"))
   
   
   #####Calculate scale frequencies:
   #extract unique notes/scales
-  
-  
   m$C<-str_count(m[,13], "C")
   m$d<-str_count(m[,13], "d")
   m$D<-str_count(m[,13], "D")
@@ -220,12 +243,18 @@ MelodicEvoAnalysis = function(s){
   }
   names(m)[133] <- "scale"
   m$scaleNum<-str_length(m$scale)
-  barplot(table(m$scaleNum)) #hist(m$scaleNum)
+  
+  jpeg(paste0("figures/Frequency_ofScale", name, ".jpeg"))
+  barplot(table(m$scaleNum))
+  dev.off()
   
   #barplot of scales ordered by frequency
-  scale<-as.data.frame(table(m$scale))
-  attach(scale)
-  scale <- scale[order(-Freq),]
-  detach(scale)
-  barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7)
+  scale<-as.data.frame(
+    sort(
+      table(m$scale), decreasing = TRUE
+      )
+    )
+  jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
+  barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7, main = name)
+  dev.off()
 }
