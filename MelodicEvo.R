@@ -1,10 +1,11 @@
 source("install.R")
 
 #If Biostrings is already installed you can comment out the following three lines of code: 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
- BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
-
+if (!requireNamespace("BiocManager", quietly = TRUE)){
+  install.packages("BiocManager")
+  BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
+}
+  
 #open packages
 library(plotrix)
 library(seqinr)
@@ -23,6 +24,10 @@ library(RColorBrewer)
 library(phangorn)
 library(GADMTools)
 
+# Make directories to store results if they don't exist
+if(!dir.exists("results/")) dir.create("results/")
+if(!dir.exists("figures/")) dir.create("figures/")
+
 # To calculate distance matrices  
 #source(PID.R) #uncomment this to recalculate distance matrices of PID among the 10,064 melodic variants, but be aware that this will take up to a month on a standard computer!
 #source(Dist.R) # uncomment this to re-dentify highly related pairs of melodies
@@ -39,13 +44,13 @@ source("MelodicEvoAnalysis.R")
 ##### Calculate mutation rates for different functional types ####
 # Full English subset
 english <- subset(d, Language=="English")
-MelodicEvoAnalysis(english)
+MelodicEvoAnalysis(english, "english")
 
 #########
 
 # Full Japanese subset
 japanese <- subset(d, Language=="Japanese")
-MelodicEvoAnalysis(japanese)
+MelodicEvoAnalysis(japanese, "japanese")
 
 #########
 
@@ -55,48 +60,48 @@ e <- subset(d, Language=="English")
 
 #Time
 english_old <- subset(e, Year<median(e$Year,na.rm=TRUE)) #older sample
-MelodicEvoAnalysis(english_old)
+MelodicEvoAnalysis(english_old, "oldenglish")
 
 english_new <- subset(e, Year>=median(e$Year,na.rm=TRUE)) #newer sample
-MelodicEvoAnalysis(english_new)
+MelodicEvoAnalysis(english_new, "newenglish")
 
 #Singer
 singer <- subset(e, Same.singer=="Y") 
-MelodicEvoAnalysis(singer)
+MelodicEvoAnalysis(singer, "englishsingerY")
 
 not_singer <- subset(e, Same.singer=="N") 
-MelodicEvoAnalysis(not_singer)
+MelodicEvoAnalysis(not_singer, "englishsingerN")
 
 #Coder
 coder_pes <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")
-MelodicEvoAnalysis(coder_pes)
+MelodicEvoAnalysis(coder_pes, "englishcoderPES")
 
 coder_gc <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")
-MelodicEvoAnalysis(coder_gc)
+MelodicEvoAnalysis(coder_gc, "englishcodeGC")
 
 #For Japanese sample
 j <- subset(d, Language=="Japanese")
 
 #Time
 japanese_old <- subset(j, Year<median(j$Year,na.rm=TRUE)) 
-MelodicEvoAnalysis(japanese_old)
+MelodicEvoAnalysis(japanese_old, "oldjapanese")
 
 japanese_new <- subset(j, Year>=median(j$Year,na.rm=TRUE)) 
-MelodicEvoAnalysis(japanese_new)
+MelodicEvoAnalysis(japanese_new, "newjapanese")
 
 #Singer
 singer_japanese <- subset(j, Same.singer=="Y")
-MelodicEvoAnalysis(singer_japanese)
+MelodicEvoAnalysis(singer_japanese, "japanesesingerY")
 
 notsinger_japanese <- subset(j, Same.singer=="N")
-MelodicEvoAnalysis(notsinger_japanese)
+MelodicEvoAnalysis(notsinger_japanese, "japanesesingerN")
 
 #Coder
 japancoder_pes <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")
-MelodicEvoAnalysis(japancoder_pes)
+MelodicEvoAnalysis(japancoder_pes, "japanesecoderPES")
 
 japancoder_gc <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")
-MelodicEvoAnalysis(japancoder_gc)
+MelodicEvoAnalysis(japancoder_gc, "japanesecoderGC")
 
 #Descriptive stats for sensitivity analyses
 sens<-read.csv("sensitivity.csv")
