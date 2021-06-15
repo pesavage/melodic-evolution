@@ -42,14 +42,17 @@ semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_dista
 model_df = left_join(substitutions_long, semitonal_long, by = c("row", "col"))
 model_df = model_df %>% filter(col != "-") %>% filter(row != "-")
 
-model_df = left_join(model_df, unchanged_sites, by = c("row" = "notes")) %>%
-  left_join(., unchanged_sites, by = c("col" = "notes"))
+model_df = left_join(model_df, unchanged_sites, by = c("col" = "notes")) %>%
+  left_join(., unchanged_sites, by = c("row" = "notes"))
 
 colnames(model_df) = c("note1", "note2", "change_frequency", 
                        "semitonal_distance", "frequency_1", "frequency_2")
 
 model_df[,3:6] = apply(model_df[,3:6], 2, as.numeric)
 
-model_df$minimum_frequency = min(model_df$frequency_1, model_df$frequency_2)
+model_df = transform(model_df, minimum_frequency = pmin(frequency_1, frequency_1))
 
-write.csv(model_df, "results/reviewer_modeldata.csv")
+model_df = model_df[model_df$note1 != model_df$note2,]
+
+write.csv(model_df, "results/reviewer_modeldata.csv", 
+          row.names = FALSE, fileEncoding = 'utf-8')
