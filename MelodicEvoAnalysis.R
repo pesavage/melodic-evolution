@@ -39,9 +39,6 @@ MelodicEvoAnalysis = function(s, name){
   m <- s[!duplicated(mut$PairNo),] #only using one value per pair, since substitution numbers are identical between variant
   semitone<-colSums(m[,21:31],na.rm=TRUE) 
   
-  semitones_df = m[,21:31]
-  save(semitones_df, file = "semitones.RData")
-  
   #grouped by 2-7 interval size
   interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
   print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
@@ -175,6 +172,8 @@ MelodicEvoAnalysis = function(s, name){
   changed<-colSums(full.mat)[2:13] 
   total<-changed+unchanged
   (mutability<-changed/total)
+  
+  write.csv(total, paste0("results/", name, "_notecounts.csv"))
   
   mat<-rbind(mat,c(NA,mutability))
   write.csv(mat,

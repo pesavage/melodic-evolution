@@ -254,7 +254,7 @@ pp_check(fit.4.1, nsamples = 100)
 
 #### Full Model
 
-Here we incorporate both the frequency and semi-tonal difference effects into a single model. In doing this we see that the effect of semi-tonal distance increases slightly, for each increase in semi-tonal distance increases, the probability of a mutation decreases by ~40%. The model summary shows that the 95% CI for all frequency effects contain zero, however as discussed in the next section are still important for the model. Interpreting the coefficients of thee models replicates what we saw earlier 
+Here we incorporate both the frequency and semi-tonal difference effects into a single model. In doing this we see that the effect of semi-tonal distance increases slightly, for each increase in semi-tonal distance increases, the probability of a mutation decreases by ~40%. The model summary shows that the 95% CI for all frequency effects contain zero, however as discussed in the next section are still important for the model. Interpreting the coefficients of these models replicates what we saw earlier: if both notes are infrequent, there is almost no chance of mutation, if both notes are high, the chance of mutation increases very fast, if one note is low and the other moderate, we see a constraint on how likely a mutation is to occur. 
 
 ```{r}
 fit.5 = brm(data = melodic_df, family = negbinomial(),
@@ -288,6 +288,21 @@ fit.5 = add_criterion(fit.5, "loo")
 
 loo_compare(fit.1, fit.3, fit.4.1, fit.5)
 
+```
+
+```{r}
+fit.5.1 = brm(data = melodic_df, family = negbinomial(),
+            change_frequency ~ semitonal_distance + log_frequencyinteraction + (1|society),
+            c(prior(cauchy(0, 0.5), class = Intercept),
+              prior(cauchy(0, 0.5), class = b),
+              prior(cauchy(0, 0.5), class = sd)),
+            seed = 10, iter = 20000, warmup = 15000, chains = 2, cores = 2,
+            control = list(max_treedepth = 15, adapt_delta = 0.99), 
+            sample_prior = TRUE, file = "results/full2_negbin")
+
+fit.5.1 = add_criterion(fit.5.1, "loo")
+
+loo_compare(fit.5, fit.5.1)
 ```
 
 
