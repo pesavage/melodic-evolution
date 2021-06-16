@@ -14,9 +14,15 @@ melodic_df$log_frequencyinteraction = log(melodic_df$frequency_1) * log(melodic_
 
 # center predictor variables
 melodic_df$c_semitonaldistance = melodic_df$semitonal_distance - mean(melodic_df$semitonal_distance)
-melodic_df$c_frequency1 = melodic_df$frequency_1 - mean(melodic_df$frequency_1)
-melodic_df$c_frequency2 = melodic_df$frequency_2 - mean(melodic_df$frequency_2)
+melodic_df$c_logfrequency1 = log(melodic_df$frequency_1) - mean(log(melodic_df$frequency_1))
+melodic_df$c_logfrequency2 = log(melodic_df$frequency_2) - mean(log(melodic_df$frequency_2))
 melodic_df$c_frequencyinteraction = melodic_df$frequency_interaction - mean(melodic_df$frequency_interaction)
+
+# standardize variables
+melodic_df$std_semitonaldistance = melodic_df$semitonal_distance / max(melodic_df$semitonal_distance)
+melodic_df$std_frequency1 =  melodic_df$frequency_1 / max(melodic_df$frequency_1)
+melodic_df$std_frequency2 =  melodic_df$frequency_2 / max(melodic_df$frequency_2)
+
 
 #### Summary ####
 
@@ -59,6 +65,7 @@ fit.1.1 <-
       control = list(max_treedepth = 15), sample_prior = TRUE,
       file = "results/intercept_negbin")
 
+fit.1.1 = add_criterion(fit.1.1, "loo")
 
 fixef(fit.1.1)[1] %>% exp()
 
@@ -95,7 +102,6 @@ fit.3 <-
       control = list(max_treedepth = 15, adapt_delta = 0.99), 
       sample_prior = TRUE,
       file = "results/semitonaldistance_negbin")
-
 
 summary(fit.3)
 
@@ -199,5 +205,13 @@ fit.5.1 = brm(data = melodic_df, family = negbinomial(),
 summary(fit.5)
 summary(fit.5.1)
 
+fit.5.2 = brm(data = melodic_df, family = negbinomial(),
+              change_frequency ~ std_semitonaldistance + std_frequency1 * std_frequency2  + (1|society),
+              c(prior(cauchy(0, 2), class = Intercept),
+                prior(cauchy(0, 2), class = b),
+                prior(cauchy(0, 0.5), class = sd)),
+              seed = 10, iter = 20000, warmup = 15000, chains = 2, cores = 2,
+              control = list(max_treedepth = 15, adapt_delta = 0.99), 
+              sample_prior = TRUE, file = "results/fullstd_negbin")
 
-pp_check(fit.5, nsamples = 500)
+pp_check(fit.5.2, nsamples = 500)

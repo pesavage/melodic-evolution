@@ -2,7 +2,9 @@
 title: "Melodic Complexity"
 author: "Sam Passmore"
 date: "08/06/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,11 +14,34 @@ library(ggplot2)
 library(GGally)
 library(dplyr)
 library(brms)
+library(tidybayes)
 ```
 
 ## Sequence alignment of folk song melodies reveals cross-cultural mechanisms of musical evolution
 
 _Patrick E. Savage, Gakuto Chiba, Thomas E. Currie, Haruo Suzuki, and Quentin D. Atkinson_
+
+# TL;DR
+
+Using a model of `mutation rate ~ semi-tonal distance + log(note 1 frequency) * log(note 2 frequency) + (1|society)` we find that semi-tonal distance and the interaction between note frequencies are important predictors of mutation rate. We find that the likelihood of a mutation occurring decreases by 40% with each increase of semi-tone. The interaction of log note frequency is more complicated to interpret, since variables depend on each other - so this result is explained graphically below. We see that if frequency 1 increases, the mutation rate increases rapidly if frequency 2 is also increasing, but remains relatively flat if frequency 2 is low. 
+
+```{r echo = FALSE}
+fit.5 = brm(data = melodic_df, family = negbinomial(),
+              change_frequency ~ semitonal_distance + 
+              log(frequency_1) * log(frequency_2) + (1|society),
+              c(prior(normal(0, 4), class = Intercept),
+                prior(cauchy(0, 2), class = b),
+                prior(cauchy(0, 0.5), class = sd)),
+              seed = 10, iter = 20000, warmup = 15000, chains = 2, cores = 2,
+              control = list(max_treedepth = 15, adapt_delta = 0.99), 
+              sample_prior = TRUE, file = "results/full_negbin",
+              init_r = 0)
+
+conditional_effects(fit.5, effects = "frequency_1:frequency_2",
+                    int_conditions = list(frequency_2 = c(1, 10, 200, 500, 1000 ,2000)))
+```
+
+## Introduction 
 
 This document contains the modeling procedure for Savage et al. (2021).
 [The Pre-print is available here.](https://psyarxiv.com/5rj6y/)
@@ -26,68 +51,70 @@ Modeling was performed in response to the reviewers comments after submission to
 * The three hypotheses presented in this paper could be tested in a single model
 * There are 66 possible note mutations (ignoring directionality): the rate of mutation could be modeled using an independent variable representing the three hypotheses
 * These hypotheses relate mutation frequency to:
-+ Substitution distance (smaller the distance the more likely the substitution)
-+ Note frequency (rarer notes are more likely to change)
-+ and location of substitution. (functional notes are less likely to change)
+    + Substitution distance (smaller the distance the more likely the substitution)
+    + Note frequency (rarer notes are more likely to change)
+    + and location of substitution. (functional notes are less likely to change)
 
-To see the reviewer comment in full see the Reviewer Comments at the bottom of the document. What follows is an attempt to appease the reviewer. 
-
+To see the reviewer comment in full see the [Reviewer Comments](#reviewer-comments) at the bottom of this document. What follows is an attempt to appease the reviewer. 
 
 ### Data 
 
-The data for the models is taken from the main scripts, and is created in the script reviewer_data.R 
+The data for the models uses output from MelodicEvo.R ([found within the Github repository](https://github.com/pesavage/melodic-evolution)), and is created in the script reviewer_data.R (also on Github). 
 
-The data contains 7 columns:
+The data was previously displayed in table S6 & S7 (count of mutations). One matrix is for Japanese songs, the other for English songs. Semi-tonal distances between notes were provided separately. Total frequency of notes was calculated during the creation of table S6 & S7.  
 
-* Note 1 & note 2 indicate the notes being analyzed
-* Change frequency indicates how often changes (or mutates) between note 1 and note 2 occur (in either direction)
-* Semi-tonal distance indicates the number of semi-tones between note 1 and note 2
-* Society indicates whether data is from the English or Japanese sample 
-* frequency_1 & frequency_2 indicates the overall frequency of each note in the complete data set
-* minimum_frequency is the minimum value between frequency_1 and frequency_2
+Currently, we do not have a variable that tests the functional location of a note change - the final point made by the reviewer. 
 
-There are 66 note combinations, representing all (non-directional) combinations between the 12 possible notes. For the 66 note combinations we measure their frequency of change in Japanese songs and in English songs - a total of 132 data-points. Here, we model all the data, with a random effect for soceity to determine whether the patterns are the same across the two groups.
+The data contains 8 columns:
 
-Some notes never occur, meaning all mutation possibilities they occur in are zero.
-This was making modeling the relationship difficult, so all change frequencies that include a note which never occurs are removed. These are:
+* __Note 1 & note 2__ indicate the notes being analyzed.
+* __Change frequency__ indicates how often changes (or mutates) between note 1 and note 2 occur (in either direction).
+* __Semi-tonal distance__ indicates the number of semi-tones between note 1 and note 2.
+* __Society__ indicates whether data is from the English or Japanese sample.
+* __frequency_1 & frequency_2__ indicates the overall frequency of each note in within each sample. 
+* __minimum_frequency__ is the minimum value between frequency_1 and frequency_2.
+* __total_changes__ is the total number of note changes in each sample (currently unused).
 
-English: d
-Japanese: e g B
+There are 66 note combinations, representing all (non-directional) combinations between the 12 possible notes. For the 66 note combinations we measure their frequency of change in Japanese songs and in English songs - a total of 132 data-points. Here, we model all the data, with a random effect for society to determine whether the patterns are the same across the two groups.
 
-This removes 41 rows, resulting in a data set of 91 mutation pairs. 
+Some notes never occur, meaning all mutation possibilities they occur in are zero. This was making modeling the relationship difficult, so all change frequencies that include a note which never occurs are removed. These are:
 
-```{r cars}
+* Japanese: e g B
+
+This removes 30 rows, resulting in a data set of 102 mutation pairs. Below is an example of the data layout. 
+
+```{r }
 melodic_df = read.csv('results/reviewer_modeldata.csv')
-kable(head(melodic_df))
+kable(head(melodic_df), digits = 2)
 ```
 
 ## Data Summary
 
 First, we look at the response, change frequency, which indicates how often changes (or mutates) between note 1 and note 2 occur (in either direction). 
 
-```{r}
+It is quite obvious that there are a lot of note combinations that have no changes. 29 of 66 changes do not occur in English songs, and 14 of 36 changes do not occur in Japanese songs. 
+
+```{r echo = FALSE}
 hist(melodic_df$change_frequency, breaks = 100)
-```
 
-It is quite obvious that there are a lot of note combinations that have no changes. 18 of 55 changes do not occur in English songs, and 14 of 36 changes do not occur in Japanese songs. 
-
-```{r}
-kable(table(melodic_df$change_frequency == 0))
-kable(table(melodic_df$change_frequency == 0, melodic_df$society))
-```
-
-What are those changes in each language? 
-
-```{r}
-kable(melodic_df[melodic_df$change_frequency == 0 & melodic_df$society == "English",c("note1", "note2", "change_frequency")])
-
-kable(melodic_df[melodic_df$change_frequency == 0 & melodic_df$society == "Japanese",c("note1", "note2", "change_frequency")])
+change_table = table(melodic_df$change_frequency == 0, melodic_df$society)
+rownames(change_table) = c("Occurs", "Does not occur")
+kable(change_table , digits = 2)
 ```
 
 
-Here, we look at a pairs plot between the dependent variable (change_frequency) and the independent variables.
+__What changes never occur in each language? __
 
-```{r message = FALSE}
+```{r echo = FALSE}
+kable(melodic_df[melodic_df$change_frequency == 0 & melodic_df$society == "English",c("note1", "note2", "change_frequency", "society")], digits = 2)
+
+kable(melodic_df[melodic_df$change_frequency == 0 & melodic_df$society == "Japanese",c("note1", "note2", "change_frequency", "society")], digits = 2)
+```
+
+
+Here, we look at a pairs plot between the dependent variable (change_frequency) and the independent variables. Semitonal distance, and each frequency measure are significantly correlated with change frequency. The frequency measures are predictably correlated with each other. Semi-tonal distance is not correlated with any of the frequency measures. 
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
 ggpairs(melodic_df, columns = c(3, 5:9), ggplot2::aes(colour=society))
 ```
 
@@ -95,7 +122,7 @@ ggpairs(melodic_df, columns = c(3, 5:9), ggplot2::aes(colour=society))
 
 The response variable here is a count of the number of mutations occurring between any pair of notes. Three model families that are designed for count data are Binomial, Poisson, and Negative Binomial. Binomial regression is usually used when both the frequency of an outcome and number of events are known (e.g. number of heads within a series of coin tosses). Poisson is typically used in a situation where the total count is unknown (e.g. how many elephants in Africa). Negative Binomial is a comparable distribution to Poisson, and is preferred to Poisson when the count data are over-dispersed. 
 
-Here, we use negative binomial models because we have count data where the total number of mutations are unknown (i.e. all changes aren't measured, just our sample) and because some changes occur alot, while some not at all (ie. over-dispersed). 
+Here, we use negative binomial models because we have count data where the total number of mutations are unknown (i.e. all changes aren't measured, just our sample) and because some changes occur alot, and others not at all (ie. over-dispersed). 
 
 
 #### Intercept-only
@@ -112,13 +139,16 @@ fit.1 <-
       file = "results/intercept_negbin")
 
 summary(fit.1)
+
+fit.1 = add_criterion(fit.1, "loo")
+
 ```
 
-Predicting model changes actually performs quite well only based on the negative-binomial assumption. 
+Predicting mutation changes performs quite well only based on the negative-binomial assumption. 
 
-The mean number of transitions over the entire set is `r round(mean(melodic_df$change_frequency), 2)`, and the estimate is `r round(exp(fixef(fit.1)[1]), 2)`. However, as we can see from the predictive plot below, the model is failing in some areas. I will use the plot throughout to understand the model fit, so it is worth explaining in a bit more detail here. The dark blue line 'y' is how the data in the response variable - mutation rate - is distributed. Each light blue line are different predictions based on the model we have built. There are 100 predicted models drawn from the Bayesian posterior. Generating predictions based on the Bayesian model gives us an idea of how well the model fits the data, and doing this multiple times gives a measure of how much error there is within the predictions. 
+The mean number of transitions over the entire set is `r round(mean(melodic_df$change_frequency), 2)`, and the estimate is `r round(exp(fixef(fit.1)[1]), 2)`. However, as we can see from the predictive plot below, the model is failing in some areas, in particular why no changes would occur. I will use the plot throughout to understand the model fit, so it is worth explaining in a bit more detail here. The dark blue line 'y' is how the data in the response variable - mutation rate - is distributed. Each light blue line are different predictions based on the model we have built. There are 100 predicted models drawn from the Bayesian posterior. Generating predictions based on the Bayesian model gives us an idea of how well the model fits the data, and doing this multiple times gives a measure of how much error there is within the predictions. In this plot, the y-axis is very long because there is high variability in the estimates for y = 0 drawn from our model posterior. 
 
-```{r}
+```{r echo = FALSE}
 pp_check(fit.1, nsamples = 100)
 ```
 
@@ -130,7 +160,7 @@ Following that, we model the relationship between mutation rate and semi-tonal d
 
 ##### Society
 
-Here, we find a significant difference in the mutation rates between Japanese and English songs. If a song is Japanese, we expect it to reduce the likelihood of any particular mutation by ~40%. We are not particularly interested in this effect, so in future models we will use society as a random variable to control for this difference in relationships that we are interested in. 
+Here, we find a significant difference in the mutation rates between Japanese and English songs. If a song is Japanese, we expect it to reduce the likelihood of any particular mutation by ~50%. We are not particularly interested in this effect, so in future models we will use society as a random variable to control for this difference in relationships that we are interested in. 
 
 ```{r}
 fit.2 =
@@ -144,10 +174,9 @@ fit.2 =
 summary(fit.2)
 ```
 
-
 Again the model performs pretty well at determining the general effects of the groups. The figure about shows estimates for the mean number of mutations within each group. The true values are in the table below, with predicted values in the graph. 
 
-```{r}
+```{r echo = FALSE}
 melodic_df %>% 
   mutate(change_prop = change_frequency / total_changes) %>% 
   group_by(society) %>% 
@@ -160,9 +189,9 @@ conditional_effects(fit.2)
 
 #### Semi-tonal distance
 
-The paper proposes that small semi-tonal distances are more likely to result in mutations. Here we test that relationship in a bi-variate model. Here we see that for each increase in semi-tonal distance increases, the probability of a mutation decreases by ~30%. However, there is quite a lot of error surrounding this estimate. 
+The paper proposes that when a mutation occurs it is more likely to be a small semi-tonal distances. Here we test that relationship in a bi-variate model, with a random effect for society. Here we see that for each increase in semi-tonal distance increases, the probability of a mutation decreases by ~41% (result under `fixed(coef) %>% inv_logit_scaled`). However, there is quite a lot of error surrounding this estimate. 
 
-Including semi-tonal distance in the model improves model fit considerably when a change occurs, however, the model is unclear on how to deal with zero mutation counts (hence the long y-axis). This seems like something frequency will deal with well.  
+Including semi-tonal distance in the model improves model fit considerably when a change occurs (found in `loo_compare`), however, the model is unclear on how to deal with zero mutation counts (hence the long y-axis). This seems like something frequency will deal with. There seems to be little difference between societies when looking at the effect of semi-tonal distance. 
 
 ```{r}
 fit.3 <-
@@ -178,11 +207,34 @@ fit.3 <-
 
 summary(fit.3)
 
-fixef(fit.3) %>% inv_logit_scaled()
+fit.3 = add_criterion(fit.3, "loo")
+```
 
-conditional_effects(fit.3)
+```{r echo = FALSE}
+fixef(fit.3) %>% inv_logit_scaled() %>% kable(digits = 2)
+
+kable(loo_compare(fit.1, fit.3), digits = 2)
 
 pp_check(fit.3, nsamples = 100)
+
+## Effect of society
+new_data = data.frame(semitonal_distance = rep(1:7, each = 2),
+                      society = rep(c("Japanese", "English"), times = 14)
+                      )
+
+semitonal_prediction = new_data %>% 
+  add_fitted_draws(fit.3, scale = "response", n = 1000)
+
+semitonal_summary <- semitonal_prediction %>%
+  group_by(society, semitonal_distance) %>%
+  summarize(.value = mean(.value))
+
+ggplot(semitonal_prediction,
+       aes(x = semitonal_distance, y = .value)) +
+  geom_line(aes(group = .draw), alpha = 0.1) +
+  geom_line(data = semitonal_summary, alpha = 0.8, 
+            color = "red", lwd = 1) +
+  facet_wrap(~society)
 
 ```
 
@@ -191,14 +243,13 @@ pp_check(fit.3, nsamples = 100)
 Here, we look at the effect of frequency on the rate of mutation response variable. There are 3 proposed ways to look at frequency:
 
 * Model the frequency of each note separately and as an interaction
-+ This will assumes a non-linear relationship between note frequency and mutation
+    + This will assumes a non-linear relationship between note frequency and mutation
 * Include a variable which is the product of each notes frequency 
-+ This is similar to above, but ignores the indepenent effects of frequency
+    + This is similar to above, but ignores the independent effects of frequency
 * Include a variable containing the minimum value of frequency 
-+ This assumes the mutation rate is only effected by a bottleneck caused by the least frequent note. 
+    + This assumes the mutation rate is only effected by a bottleneck caused by the least frequent note. 
 
 We model raw frequency counts on the log scale because of the skewed distribution in note frequency (some notes occur a lot and some not often). In the case of the interaction variable, frequency values are logged and then multiplied. 
-
 
 ```{r}
 fit.4.1 = brm(data = melodic_df, family = negbinomial(),
@@ -233,28 +284,32 @@ fit.4.1 = add_criterion(fit.4.1, "loo")
 fit.4.2 = add_criterion(fit.4.2, "loo")
 fit.4.3 = add_criterion(fit.4.3, "loo")
 
-loo_compare(fit.4.1, fit.4.2, fit.4.3)
+kable(loo_compare(fit.4.1, fit.4.2, fit.4.3),digits = 2)
 ```
 
-Comparing these three models to each other we find that only using the minimum frequency value for both notes performs considerably worse than models that include both frequency values. There is only a negligible difference between the model containing both frequency values and the interaction variable. These two approaches are very mathematically similar so this is not particularly surprising.
+Comparing these three models to each other we find that only using the minimum frequency value for both notes performs considerably worse than models that include frequency for both notes. This suggests an interactive relationship is important. There is only a negligible difference between the model containing both frequency values and the interaction variable. These two approaches are very mathematically similar so this is not particularly surprising. For future reference I will call the model in the form of `log(frequency_1) * log(frequency_2)` as the full interaction model, and the model of the form `logfrequency_interaction` as the interaction only model. 
 
-Although the model performs slightly worse, my opinion is that we should prefer the full interaction model. This model is more explicit about the relationship between variables, as it is more common to include both main and interaction effects, and the model requires less stringent priors to obtain convergence.
+Although the full interaction model performs slightly worse, my opinion is that we should prefer it. The full interaction model is more explicit about the relationship between variables, it is also more common to include both main and interaction effects, and the model requires less stringent priors to obtain convergence. Having said that, a philosophical point is that in the full interaction model, no individual effect is significant, while in the interaction only model, the interaction effect is (what might conventionally be called) significant. This point then becomes a more philosophical debate around how we think about statistics in science which I will omit from this report. 
 
-We plot the conditional effects of the interaction to see how the interaction works. The graph below has the mutation rate on the y-axis (change_frequency) and the frequency of note 1 on the x-axis. Because this is a conintuous interaction, the frequency of the second note is binned into 5 categories, and we can infer the interaction effect this way. If frequency of note 1 is low and frequency of note 2 is low, there is almost zero chance of a mutation. As the frequency of each note increases, there is an increased probability of a mutation. There is some evidence of the bottleneck hypothesis when frequencies stay low - e.g. when note 2's frequency is 192, the probability of change remains relatively constant after an initial rise of note 1's frequency. However, when both notes are very frequent, the rate of mutation increases as a much faster rate, so the bottleneck hypothesis fails here. 
+We plot the conditional effects of the full interaction model to see how the interaction works (These results apply to both the full interaction and interaction only model). The graph below has the mutation rate on the y-axis (change_frequency) and the frequency of note 1 on the x-axis. Because this is a continuous interaction, the frequency of the second note is binned into 5 categories, from which we can infer the interaction effect. If frequency of note 1 is low and frequency of note 2 is low, there is almost zero chance of a mutation. As the frequency of each note increases, there is an increased probability of a mutation. There is some evidence of the bottleneck hypothesis when frequencies stay low - e.g. when note 2's frequency is 192, the probability of change remains relatively constant after an initial rise of note 1's frequency. However, when both notes are very frequent, the rate of mutation increases as a much faster rate, so the bottleneck hypothesis fails here. As is clear from the shaded areas of the plot, as frequency increases, so does the error in our estimates - this is because we have only a few note combinations that occur frequently. 
+
+Notably the model still doesn't deal with zero mutation values well. 
 
 ```{r}
 summary(fit.4.1)
+```
 
+```{r echo = FALSE}
 conditional_effects(fit.4.1, effects = "frequency_1:frequency_2",
-                    int_conditions = list(frequency_2 = quantile))
+                    int_conditions = list(frequency_2 = c(1, 10, 200, 500, 1000 ,2000)))
 
 pp_check(fit.4.1, nsamples = 100)
 ```
 
 
-#### Full Model
+#### Complete Model
 
-Here we incorporate both the frequency and semi-tonal difference effects into a single model. In doing this we see that the effect of semi-tonal distance increases slightly, for each increase in semi-tonal distance increases, the probability of a mutation decreases by ~40%. The model summary shows that the 95% CI for all frequency effects contain zero, however as discussed in the next section are still important for the model. Interpreting the coefficients of these models replicates what we saw earlier: if both notes are infrequent, there is almost no chance of mutation, if both notes are high, the chance of mutation increases very fast, if one note is low and the other moderate, we see a constraint on how likely a mutation is to occur. 
+Here we incorporate both the frequency and semi-tonal difference effects into a single model. Here we use the full interaction frequency model, but will discuss the interaction only model afterwards. Within the complete model, the effect of semi-tonal distance decreases slightly: for each increase in semi-tonal distance increases, the probability of a mutation decreases by ~40%. The model summary shows that the 95% CI for all frequency effects contain zero, however as discussed previously are still important for the model. Interpreting the coefficients of these models replicates what we saw earlier: if both notes are infrequent, there is almost no chance of mutation, if both notes are high, the chance of mutation increases very fast, if one note is low and the other moderate, we see a constraint on how likely a mutation is to occur. 
 
 ```{r}
 fit.5 = brm(data = melodic_df, family = negbinomial(),
@@ -270,25 +325,33 @@ fit.5 = brm(data = melodic_df, family = negbinomial(),
 
 summary(fit.5)
 
+
+```
+
+```{r}
 fixef(fit.5) %>% inv_logit_scaled()
 
 conditional_effects(fit.4.1, effects = "frequency_1:frequency_2",
                     int_conditions = list(frequency_2 = quantile))
 
-pp_check(fit.5, nsamples = 100)
+pp_check(fit.5, nsamples = 500)
 ```
 
+##### Model comparison
 
-### Model comparison
+Comparing all models, the complete model (containing semi-tonal and frequency measures) is the best model by some distance. This suggests that both semitonal distance and frequency of notes are important in determining the likelihood of a mutation. 
+
 
 ```{r}
 
 fit.3 = add_criterion(fit.3, "loo")
 fit.5 = add_criterion(fit.5, "loo")
 
-loo_compare(fit.1, fit.3, fit.4.1, fit.5)
+loo_compare(fit.1, fit.3, fit.4.1, fit.5) %>% kable(digits = 2)
 
 ```
+
+For sake of argument, we also compare the complete model, containing the full interaction frequency model against a complete model, containing the interaction only frequency model. Again, this shows a negligble difference between the models, with a slight preference for the interaction only frequency model. 
 
 ```{r}
 fit.5.1 = brm(data = melodic_df, family = negbinomial(),
@@ -302,11 +365,25 @@ fit.5.1 = brm(data = melodic_df, family = negbinomial(),
 
 fit.5.1 = add_criterion(fit.5.1, "loo")
 
-loo_compare(fit.5, fit.5.1)
+loo_compare(fit.5, fit.5.1) %>% kable(digits = 2)
 ```
+
+## Summary
+
+The reviewer gives 5 points on how this analysis can answer some more questions:
+
+* _since the dependent variable is the same, the authors will be able to estimate the relative importance of their three selective forces by examining the variance explained by each; currently the cannot._
+    + (We can address this more directly than I have so far)
+* _The explanatory variables might, themselves, be correlated; my analysis would make that clear._
+    + Correlations between the two variables suggest this is unlikely. Since the effects of semi-tonal distance and frequency are relatively similar in bi-variate and multi-variate models, this is further evidence that the effects are unrelated. 
+* _They can search for interactions among their explanatory variables. Perhaps substitutions at functional sites are not only rare, but also tend to involve particularly small jumps._
+    + Interactions between frequency of notes were important. We do not currently have the data to test whether an interaction between functional sites and semi-tonal changes. 
+* _The authors will be able to get uncertainties around their point estimates_
+    + We have these from the model fits, however, these will likely be overestimates. By testing this across more societies (which use this scale range), we will have better estimates. 
 
 
 ### Reviewer comments
+{#reviewer-comments}
 
 _"The three hypotheses: about substitution distance, note frequency dependence, and note functionality, can all be couched in exactly the same terms: substitutions requiring big jumps in musical space should be rare relative to those requiring small jumps; substitutions in common notes should be rare relative to those in rare notes; substitutions in functionally important notes should be rare relative to those in functionally unimportant notes (ornamental notes)._
 

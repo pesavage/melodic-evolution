@@ -21,11 +21,8 @@ get_substitutions = function(substitution_matrix){
   
   substitutions_long = substitutions_long[!is.na(substitutions_long$change_frequency),]
   substitutions_long$change_frequency[substitutions_long$col == substitutions_long$row] = 0
-  
-  unchanged_sites = data.frame(notes = colnames(substitution_matrix), 
-                               unchanged_sites = diag(substitution_matrix))
 
-  list(substitutions = substitutions_long, unchanged_sites = unchanged_sites)  
+  list(substitutions = substitutions_long)  
 }
 
 english_substitutionmatrix = read.csv('results/english_SubstitutionMatrix.csv', 
@@ -41,25 +38,25 @@ japanese_output = get_substitutions(japanese_substitutionmatrix)
 substitutions_long = rbind(english_output$substitutions, japanese_output$substitutions)
 substitutions_long$society = rep(c("English", "Japanese"), each = nrow(english_output$substitutions))
 
-unchanged_sites = rbind(english_output$unchanged_sites, japanese_output$unchanged_sites)
-unchanged_sites$society = rep(c("English", "Japanese"), each = nrow(english_output$unchanged_sites))
+## Total note counts
+english_count = read.csv('results/english_notecounts.csv')
+colnames(english_count) = c("note", "count")
+english_count$society = "English"
 
-# total note counts
-unchanged_sites$total_count = NA
-for(i in 1:nrow(unchanged_sites)){
-  note = unchanged_sites$notes[i]
-  society = unchanged_sites$society[i]
-  
-  changed_sites = 
-  
-}
+japanese_count = read.csv('results/japanese_notecounts.csv')
+colnames(japanese_count) = c("note", "count")
+japanese_count$society = "Japanese"
+
+counts = rbind(english_count, japanese_count)
 
 # Load and Format semi-tonal data
 semitonal_distance = read_xlsx("SubstitutionSize_distancematrices.xlsx", 
                                sheet = "Semitone distance matrix") %>%
   as.matrix()
-rownames(semitonal_distance) = semitonal_distance[,1]
+
 semitonal_distance = semitonal_distance[,2:ncol(semitonal_distance)]
+semitonal_distance = apply(semitonal_distance, 2, as.numeric)
+rownames(semitonal_distance) = colnames(semitonal_distance)
 
 semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_distance)], 
                             row=rownames(semitonal_distance)[row(semitonal_distance)], 
@@ -69,8 +66,8 @@ semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_dista
 model_df = left_join(substitutions_long, semitonal_long, by = c("row", "col"))
 model_df = model_df %>% filter(col != "-") %>% filter(row != "-")
 
-model_df = left_join(model_df, unchanged_sites, by = c("col" = "notes", "society" = "society")) 
-model_df = left_join(model_df, unchanged_sites, by = c("row" = "notes", "society" = "society"))
+model_df = left_join(model_df, counts, by = c("col" = "note", "society" = "society")) 
+model_df = left_join(model_df, counts, by = c("row" = "note", "society" = "society"))
 
 colnames(model_df) = c("note1", "note2", "change_frequency", "society",
                        "semitonal_distance", "frequency_1", "frequency_2")
