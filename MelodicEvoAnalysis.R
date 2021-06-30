@@ -173,6 +173,8 @@ MelodicEvoAnalysis = function(s, name){
   total<-changed+unchanged
   (mutability<-changed/total)
   
+  print(mutability)
+  write.csv(mutability, paste0("results/", name, "_mutability.csv"))
   write.csv(total, paste0("results/", name, "_notecounts.csv"))
   
   mat<-rbind(mat,c(NA,mutability))

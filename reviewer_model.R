@@ -5,7 +5,7 @@ library(tidybayes)
 library(dplyr)
 
 melodic_df = read.csv('results/reviewer_modeldata.csv')
-seed = 88877
+seed = 88878
 
 # Extra variables
 melodic_df$frequency_interaction = melodic_df$frequency_1 * melodic_df$frequency_2
@@ -51,11 +51,11 @@ ggplot(melodic_long, aes(x = value, group = society)) +
 
 fit.1 <-
   brm(data = melodic_df, family = binomial,
-      change_frequency | trials(total_changes) ~ 1,
+      change_frequency | trials(total_notes) ~ 1,
       prior(normal(0, 10), class = Intercept),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
-      file = "results/intercept_model")
+      file = "results/intercept_bin")
 
 fit.1.1 <-
   brm(data = melodic_df, family = negbinomial(),
@@ -67,9 +67,9 @@ fit.1.1 <-
 
 fit.1.1 = add_criterion(fit.1.1, "loo")
 
-fixef(fit.1.1)[1] %>% exp()
+fixef(fit.1)[1] %>% exp()
 
-# pp_check(fit.1, nsamples = 500)
+# pp_check(fit.1, nsamples = 100)
 # pp_check(fit.1.1, nsamples = 500)
 
 fit.2 <-
@@ -80,10 +80,18 @@ fit.2 <-
       control = list(max_treedepth = 15, adapt_delta = 0.99), 
       sample_prior = TRUE, file = "results/society_negbinom")
 
-fixef(fit.2) %>%
+fit.2.1 <-
+  brm(data = melodic_df, family = binomial,
+      change_frequency | trials(total_notes) ~ 1 + society,
+      prior(normal(0, 10), class = Intercept),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      file = "results/society_bin")
+
+fixef(fit.2.1) %>%
   exp()
 
-# pp_check(fit.2, nsamples = 500)
+# pp_check(fit.2.1, nsamples = 500)
 
 plot(conditional_effects(fit.2), ask = FALSE)
 
@@ -103,12 +111,20 @@ fit.3 <-
       sample_prior = TRUE,
       file = "results/semitonaldistance_negbin")
 
-summary(fit.3)
+fit.3.1 <-
+  brm(data = melodic_df, family = binomial,
+      change_frequency | trials(total_notes) ~ 1 + semitonal_distance + society,
+      prior(normal(0, 10), class = Intercept),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      file = "results/semitonaldistance_bin")
 
-fixef(fit.3) %>%
+summary(fit.3.1)
+
+fixef(fit.3.1) %>%
   exp()
 
-pp_check(fit.3, nsamples = 500)
+pp_check(fit.3.1, nsamples = 500)
 
 #### Frequency ####
 
@@ -182,6 +198,42 @@ fit.4.5 = brm(data = melodic_df, family = negbinomial(),
 fit.4.5 = add_criterion(fit.4.5, "loo")
 loo_compare(fit.4.1, fit.4.2, fit.4.3, fit.4.4, fit.4.5)
 
+
+#### Mutability ####
+
+fit.4.6 <-
+  brm(data = melodic_df, family = binomial,
+      change_frequency | trials(total_notes) ~ 1 + mutability_1 * mutability_2 + society,
+      prior(normal(0, 10), class = Intercept),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      file = "results/frequency_bin")
+
+summary(fit.4.6)
+pp_check(fit.4.6, nsamples = 100)
+conditional_effects(fit.4.6, effects = "mutability_1:mutability_2",
+                    int_conditions = list(mutability_2 = seq(0, 1, by = 0.2)))
+
+conditional_effects(fit.4.6, conditions = 
+                      data.frame(total_notes = unique(melodic_df$total_notes)))
+
+
+fit.4.7 = brm(data = melodic_df, family = negbinomial(),
+              change_frequency ~ mutability_1 * mutability_2 + (1|society),
+              c(prior(cauchy(0, 4), class = Intercept),
+                prior(cauchy(0, 2), class = b),
+                prior(cauchy(0, 0.5), class = sd)),
+              seed = 10, iter = 10000, warmup = 5000, chains = 2, cores = 2,
+              control = list(max_treedepth = 15, adapt_delta = 0.99),
+              sample_prior = TRUE, file = "results/mutabilityint_negbin")
+
+fit.4.6 = add_criterion(fit.4.6, "loo", moment_match = TRUE)
+
+conditional_effects(fit.4.6, effects = "mutability_1:mutability_2",
+                    int_conditions = list(mutability_2 = seq(0, 1, by = 0.2)))
+
+
+pp_check(fit.4.6, nsamples = 100)
 #### Full Model ####
 
 fit.5 = brm(data = melodic_df, family = negbinomial(),
@@ -215,3 +267,46 @@ fit.5.2 = brm(data = melodic_df, family = negbinomial(),
               sample_prior = TRUE, file = "results/fullstd_negbin")
 
 pp_check(fit.5.2, nsamples = 500)
+
+fit.5.3 = brm(data = melodic_df, family = negbinomial(),
+              change_frequency ~ semitonal_distance + mutability_1 * mutability_2  + (1|society),
+              c(prior(cauchy(0, 2), class = Intercept),
+                prior(cauchy(0, 2), class = b),
+                prior(cauchy(0, 0.5), class = sd)),
+              seed = 10, iter = 20000, warmup = 15000, chains = 2, cores = 2,
+              control = list(max_treedepth = 15, adapt_delta = 0.99), 
+              sample_prior = TRUE, file = "results/fullmutability_negbin")
+
+fit.5.3 = add_criterion(fit.5.3, "loo", moment_match = TRUE)
+
+
+pp_check(fit.5.3, nsamples = 100)
+
+loo_compare(fit.5.3, fit.4.6)
+
+
+fit.6 <-
+  brm(data = melodic_df, family = binomial,
+      change_frequency | trials(total_notes) ~ 1 + semitonal_distance + mutability_1 * mutability_2,
+      prior(normal(0, 10), class = Intercept),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      file = "results/full_bin")
+
+summary(fit.6)
+
+pp_check(fit.6, nsamples = 100)
+
+melodic_df$label = paste(melodic_df$note1, "-", melodic_df$note2)
+
+conditional_effects(fit.6, conditions = 
+                      data.frame(total_notes = unique(melodic_df$total_notes)))
+
+ggplot(melodic_df, aes(y = change_frequency / total_changes, 
+                       x = mutability_1 + mutability_2 + mutability_1 * mutability_2, 
+                       col = society,
+                       size = semitonal_distance)) +
+  geom_text(label = melodic_df$label)
+
+ggplot(melodic_df, aes(y = frequency_1, x = mutability_1, col = society)) +
+  geom_jitter()

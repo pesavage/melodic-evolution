@@ -1,0 +1,245 @@
+---
+title: Sequence aligmnet of folk songs melodies reveals cross-cultural mechanisms
+  of musical evolution
+author: "Sam Passmore"
+date: "25/06/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(brms)
+library(tidybayes)
+library(scales)
+
+melodic_df = read.csv('results/reviewerstd_modeldata.csv')
+```
+
+## Introduction
+
+##### Authors
+_Patrick E. Savage, Gakuto Chiba, Thomas E. Currie, Haruo Suzuki, Sam Passmore, and Quentin D. Atkinson_
+
+
+This document contains the modeling procedure for Savage et al. (2021).
+[The Pre-print is available here.](https://psyarxiv.com/5rj6y/)
+
+Modeling was performed in response to the reviewers comments after submission to _Current Biology_, which can be summarized into the following bullet points:
+
+* The three hypotheses presented in this paper could be tested in a single model
+* There are 66 possible note substitutions (ignoring directionality): the rate of substitutions could be modeled using an independent variable representing the three hypotheses
+* These hypotheses relate substitution counts to:
+    + Substitution distance (smaller the distance the more likely the substitution)
+    + Note count (rarer notes are more likely to change)
+    + and location of substitution. (functional notes are less likely to change)
+    
+After much thought, we determine that these hypotheses cannot be determined by a single model and need to be split into two categories: hypotheses concerned with mutations (i.e. pairs of notes), and hypotheses concerned with individual notes. However, we can test some hypotheses this way. This document covers hypotheses concerned with substitutions (figure 3 of main text).
+
+The hypotheses we test here are:
+
+* More frequent notes change more often on an absolute basis
+* Substitutions with smaller semi-tonal distance are more likely to change
+* Substitutions between functional notes should be less common that substitutions between ornamental notes. 
+
+## Analysis
+### Null model
+
+A null substitution model would suggest that: in the event of a substitution, every note is equally likely to be substituted. Under this model, we would expect the product of the note frequencies would be proportional to the rate of substitutions. 
+
+If we find substitutions occuring above this line, this implies they occur more frequently than we would expect, and below this line, less frequently. The second and third hypotheses are then looking to explain the residual variation from this relationship. 
+
+```{r echo = FALSE}
+plot(y = seq(from = 0, to = 60, length.out = 1000), 
+     x = 0:999, type = 'l', col = "blue",
+     main = "Substitutions occur in proportion \nto note count product", xlab = "Note 1 count x Note 2 count", ylab = "Number of substitutions")
+points(y = 40, x = 400, col = "red", pch = 19)
+segments(x0 = 400, x1 = 400, y0 = 24, y1 = 40, lty = "dashed", col = "red")
+points(y = 20, x = 600, col = "red", pch = 19)
+segments(x0 = 600, x1 = 600, y0 = 20, y1 = 36, lty = "dashed", col = "red")
+```
+
+### Observed data
+
+First, we visualize the relationship using the raw data. The number of substitutions is shown on the y-axis and the product of note frequencies on the x-axis. The blue line shows the expected relationship given the null model of random substitutions. Notably, there is considerable variation above and below the line. 
+
+```{r echo = FALSE}
+ggplot(melodic_df, aes(y = mutation_count, 
+                       x = count_1 * count_2)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  geom_point() +
+  theme(legend.position = "none") +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  scale_x_continuous(labels = comma) + 
+  ggtitle("Substitutions against count interaction in English and Japanese songs")
+
+```
+
+To build a statistical null model, we take the ratio of substitutions to total notes per society using a binomial response, in order to control for the different number of notes and songs in each sample. We then build a model with an origin intercept, since we know that if two notes don't occur, we cannot have any substitutions. The response is predicted by the product of note counts, excluding main effects. This model is a reasonable fit, however, we want to understand the deviations from this null model. 
+
+
+```{r warnings = FALSE, message = FALSE}
+fit.1 <-
+  brm(data = melodic_df, family = binomial,
+      mutation_count | trials(total_notes) ~ 0 + std_count1:std_count2,
+      prior(normal(0, 1), coef = "std_count1:std_count2"),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      save_pars = save_pars(all = TRUE),
+      file = "results/null_bin")
+
+summary(fit.1)
+
+pp_check(fit.1, nsamples = 50) + xlim(c(0 , 50))
+```
+
+## Society
+
+A hypothesis not suggested by the reviewer, but we can test here is whether there is a difference between societies in their rate of substitution. We do this by allowing the null slope coefficient to vary by society. A steeper coefficient implies that a society substitutes notes at a higher rate than we would expect under the null model. We can visualize this by plotting the English and Japanese data on separate graphs. Note each graph has its own scales to make the data easier to visualize.  
+
+```{r echo = FALSE}
+ggplot(melodic_df, aes(y = mutation_count, 
+                       x = count_1 * count_2)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  geom_point() +
+  theme(legend.position = "none") +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  scale_x_continuous(labels = comma) + 
+  facet_wrap(~society, scales = "free") +
+  ggtitle("Substitutions against count interaction in English and Japanese songs")
+```
+
+
+```{r}
+fit.2 <-
+  brm(data = melodic_df, family = binomial,
+      mutation_count | trials(total_notes) ~ 
+        0 + std_count1:std_count2:society,
+      prior(normal(0, 1), class = b),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      save_pars = save_pars(all = TRUE),
+      file = "results/societyrslopes_bin")
+
+summary(fit.2)
+```
+
+## Semitonal distance
+
+The first hypothesis we test is whether semi-tonal distance can explain why some note substitutions occur more or less often than expected under the null model. The prediction is that substitutions across smaller semi-tonal distances are likely to occur more often than larger semi-tonal distances. To visualize this relationships, we size the points by their semi-tonal distance shows us that smaller semi-tonal distances occur more often than we would expect under the null model, and larger semi-tonal distances occur less often than we would expect, aligning with the hypothesis. In the graph below, smaller circles indicate smaller semi-tonal distances. 
+
+To model this relationship, we extend the previous model by including a semitonal distance predictor as an independent variable. 
+
+```{r echo = FALSE}
+ggplot(melodic_df, aes(y = mutation_count, 
+                       x = count_1 * count_2,
+                       size = semitonal_distance)) +
+  geom_point(shape = 21) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  theme(legend.position = "none") +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  facet_wrap(~society, scales = "free") + 
+  scale_x_continuous(labels = comma) + 
+  ggtitle("Substitutions against count interaction in English and Japanese songs")
+```
+
+```{r}
+fit.3 <-
+  brm(data = melodic_df, family = binomial,
+      mutation_count | trials(total_notes) ~ 
+        0 + std_count1:std_count2:society + functional_change,
+      prior(normal(0, 5), class = b),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      file = "results/functional_bin")
+
+summary(fit.3)
+```
+
+
+## Note function
+
+The second hypothesis suggested by the reviewer depended on whether the note substitution changed between two functional notes (F-F), between two non-functional notes (NF-NF), or between functional note and a non-functional note (F-NF; we cannot know the direction of change). Here we test this by extending the society random-slope model and add a variable indicating which substitution category each note pair reflects. We visualize this relationship by coloring each data point as one of the three categories: F-F (red), F-NF (green), and NF-NF (blue). This shows that F-NF changes occur very rarely. Similarly F-F pairs occur somewhat more rare than we expect. However, a NF-NF pair would tell us little about the likelihood of change. 
+
+```{r echo = FALSE}
+ggplot(melodic_df, aes(y = mutation_count, 
+                       x = count_1 * count_2)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  geom_point(shape = 21, size = 3, aes(fill = functional_change)) +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  facet_wrap(~society, scales = "free") + 
+  scale_x_continuous(labels = comma) +
+  theme(legend.position = c(0.62, 0.82), legend.title = element_blank()) +
+  scale_size_continuous(guide = "none") +
+  ggtitle("Substitutions against count interaction in English and Japanese songs")
+```
+
+```{r}
+fit.4 <-
+  brm(data = melodic_df, family = binomial,
+      mutation_count | trials(total_notes) ~ 
+        0 + std_count1:std_count2:society + std_semitonaldistance,
+      prior(normal(0, 5), class = b),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      save_pars = save_pars(all = TRUE),
+      file = "results/semitones_bin")
+
+summary(fit.4)
+```
+
+## Full model
+
+Finally, we add these hypotheses into a single model and graph. The full model is preferred when using LOO comparison. Now we can interpret the effects of this model. 
+
+```{r echo = FALSE}
+ggplot(melodic_df, aes(y = mutation_count, 
+                       x = count_1 * count_2, size = semitonal_distance)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  geom_point(shape = 21, aes(fill = functional_change), alpha = 0.8) +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  facet_wrap(~society, scales = "free") + 
+  scale_x_continuous(labels = comma) +
+  theme(legend.position = c(0.62, 0.82), legend.title = element_blank()) +
+  scale_size_continuous(guide = "none") +
+  ggtitle("Substitutions against count interaction in English and Japanese songs")
+```
+
+```{r}
+fit.5 <-
+  brm(data = melodic_df, family = binomial,
+      mutation_count | trials(total_notes) ~ 
+        0 + std_count1:std_count2:society + std_semitonaldistance + functional_change,
+      prior(normal(0, 5), class = b),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      file = "results/full_bin")
+
+summary(fit.5)
+pp_check(fit.5, nsamples = 50)
+```
+
+```{r}
+loo_compare(fit.1, fit.2, fit.3, fit.4, fit.5) %>% kable(digits = 2)
+```
+
+```{r}
+post.5 = posterior_samples(fit.5)
+
+diff_a =  post.5$`b_std_count1:std_count2:societyJapanese` -       post.5$`b_std_count1:std_count2:societyEnglish`
+
+diff_b = inv_logit_scaled(post.5$`b_std_count1:std_count2:societyJapanese`) - inv_logit_scaled(post.5$`b_std_count1:std_count2:societyEnglish`)
+
+quantile(diff_a, prob = c(.5, .025, .75))
+quantile(diff_b, prob = c(.5, .025, .75))
+
+```
+
+
