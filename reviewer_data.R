@@ -192,5 +192,18 @@ total_notes = data.frame(society = c("English", "Japanese"),
 
 model_df = left_join(model_df, total_notes, "society")
 
+
+# total notes by function
+function_total = data.frame(
+  society = c(rep("English", 3), rep("Japanese", 3)),
+  functional_change = rep(c("NF-NF", "F-F", "F-NF"), 2),
+  functional_total = c(
+    16240 + 16240, 5039 + 5039, 5039 + 16240,
+    7424 + 7424, 2406 + 2406, 2406 + 7424
+  )
+)
+
+model_df = left_join
+
 write.csv(model_df, "results/reviewer_modeldata.csv",
           row.names = FALSE, fileEncoding = 'utf-8')
