@@ -16,13 +16,16 @@ melodic_df$std_semitonaldistance = melodic_df$semitonal_distance / max(melodic_d
 melodic_df$std_count1 = melodic_df$count_1 / max(melodic_df$count_1)
 melodic_df$std_count2 = melodic_df$count_2 / max(melodic_df$count_2)
 
+# change levels
+melodic_df$functional_change = factor(melodic_df$functional_change, levels = c("NF-NF", "F-NF", "F-F"))
+
 # save standardized variables
 write.csv(melodic_df, "results/reviewerstd_modeldata.csv")
 
 ## null model
 fit.1 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ std_count1:std_count2,
+      mutation_count | trials(functional_total) ~ std_count1:std_count2,
       prior(normal(0, 1), coef = "std_count1:std_count2"),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
@@ -37,7 +40,7 @@ abline(h = -0)
 
 fit.1.3 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
+      mutation_count | trials(functional_total) ~ 
          std_count1:std_count2:society,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
@@ -49,7 +52,7 @@ pp_check(fit.1.1)
 
 fit.1.2 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
+      mutation_count | trials(functional_total) ~ 
          std_count1:std_count2 + society,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
@@ -69,7 +72,7 @@ loo_compare(fit.1, fit.1.1)
 
 fit.2 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
+      mutation_count | trials(functional_total) ~ 
          std_count1:std_count2:society + std_semitonaldistance,
       prior(normal(0, 5), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
@@ -84,7 +87,7 @@ summary(fit.2)
 # functional
 fit.3 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
+      mutation_count | trials(functional_total) ~ 
          std_count1:std_count2:society + functional_change,
       prior(normal(0, 5), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
@@ -95,54 +98,51 @@ pp_check(fit.3)
 summary(fit.3)
 
 # full model
-fit.4 <-
-  brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
-         std_count1:std_count2:society + std_semitonaldistance + functional_change,
-      prior(normal(0, 5), class = b),
-      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
-      control = list(max_treedepth = 15), sample_prior = TRUE,
-      file = "results/full_bin")
+# fit.4.1 <-
+#   brm(data = melodic_df, family = binomial,
+#       mutation_count | trials(functional_total) ~ 
+#          std_count1:std_count2:society:functional_change + std_semitonaldistance,
+#       prior(normal(0, 5), class = b),
+#       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+#       control = list(max_treedepth = 15), sample_prior = TRUE,
+#       file = "results/fullrslopes_bin")
 
-fit.4.1 <-
+
+fit.4.2 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
-         std_count1:std_count2:society:functional_change + std_semitonaldistance,
+      mutation_count | trials(functional_total) ~ 
+        std_count1:std_count2:society + functional_change + std_semitonaldistance,
       prior(normal(0, 5), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       file = "results/fullrslopes_bin")
 
-fit.4.2 <-
-  brm(data = melodic_df, family = binomial,
-      mutation_count | trials(total_notes) ~ 
-        std_count1:std_count2:society + functional_change + std_semitonaldistance,
-      prior(normal(0, 5), class = b),
-      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
-      control = list(max_treedepth = 15), sample_prior = TRUE,
-      file = "results/fullrslopes_bin2")
-
 predict(fit.4.2, newdata = data.frame(std_count1 = 100000, std_count2 = 0, 
-                                      total_notes = 11717, 
+                                      functional_total = 11717, 
                                       functional_change = "NF-NF",
                                       std_semitonaldistance = 0.25,
                                       society = "English"))
 
-pp_check(fit.4, nsamples = 100)
+pp_check(fit.4.2, nsamples = 100)
 
 resid.4 = residuals(fit.4.2)
 pred.4 = predict(fit.4.2)
 plot(y = melodic_df$mutation_count, pred.4[,1])
 points(y = melodic_df$mutation_count, x = melodic_df$mutation_count, col = "red")
 
+summary(fit.4.2)
+
+fixef(fit.4.2) %>% inv_logit_scaled()
+
 # add model criterion
 fit.1 = add_criterion(fit.1, "loo", moment_match = TRUE)
 fit.1.3 = add_criterion(fit.1.3, "loo", moment_match = TRUE)
 fit.2 = add_criterion(fit.2, "loo", moment_match = TRUE)
-fit.3 = add_criterion(fit.3, "loo", moment_match = TRUE)
-fit.4 = add_criterion(fit.4, "loo", moment_match = TRUE)
+# fit.3 = add_criterion(fit.3, "loo", moment_match = TRUE, cores = 1)
+fit.3 = loo(fit.3, cores = 1, pointwise = TRUE, moment_match = TRUE)
+fit.4.2 = add_criterion(fit.4.2, "loo", moment_match = TRUE)
 
 loo_compare(fit.1, fit.2, fit.3, fit.4)
-
+loo(fit.1, fit.1.3, fit.2, fit.3, fit.4.2)
 
 post.4 = posterior_samples(fit.4)

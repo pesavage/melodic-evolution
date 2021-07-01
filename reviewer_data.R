@@ -203,7 +203,8 @@ function_total = data.frame(
   )
 )
 
-model_df = left_join
+model_df = left_join(model_df, function_total, 
+                     by = c("society", "functional_change"))
 
 write.csv(model_df, "results/reviewer_modeldata.csv",
           row.names = FALSE, fileEncoding = 'utf-8')
