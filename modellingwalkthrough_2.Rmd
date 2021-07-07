@@ -240,6 +240,16 @@ diff_b = inv_logit_scaled(post.5$`b_std_count1:std_count2:societyJapanese`) - in
 quantile(diff_a, prob = c(.5, .025, .75))
 quantile(diff_b, prob = c(.5, .025, .75))
 
+quantile(
+  inv_logit_scaled(
+    post.5$b_functional_changeFMF
+  )
+)
+
+
+
+
+predict()
 ```
 
 
