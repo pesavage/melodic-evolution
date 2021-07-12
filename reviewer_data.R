@@ -1,5 +1,6 @@
 library(readxl)
 library(dplyr)
+library(ggplot2)
 
 ## Data needs these columns:
 # Total = Frequency of note change (bidirectional)
@@ -206,5 +207,31 @@ function_total = data.frame(
 model_df = left_join(model_df, function_total, 
                      by = c("society", "functional_change"))
 
-write.csv(model_df, "results/reviewer_modeldata.csv",
+model_df = model_df[model_df$functional_change != "F-NF",]
+model_df$functionalchange_bin = ifelse(model_df$functional_change == "NF-NF", 0, 1)
+model_df$functional_total = model_df$functional_total / 2
+
+write.csv(model_df, "results/reviewer_wonf_f_modeldata.csv",
           row.names = FALSE, fileEncoding = 'utf-8')
+
+# Make main figure
+
+model_df$functional_change = ifelse(model_df$functional_change == "NF-NF", "Weaker function",
+                                    "Strong function")
+model_df$functionalchange_bin = ifelse(model_df$functional_change == "NF-NF", 0, 1)
+
+plot_1 = ggplot(model_df, aes(y = mutation_count, 
+                       x = count_1 * count_2, size = semitonal_distance)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  geom_point(shape = 21, aes(fill = functional_change), alpha = 0.8) +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  facet_wrap(~society, scales = "free") + 
+  scale_x_continuous(labels = scales::comma) +
+  theme(legend.position = c(0.12, 0.94), legend.title = element_blank(),
+        legend.background=element_rect(fill = alpha("white", 0.0)),
+        text = element_text(size=14)) +
+  scale_size_continuous(guide = "none") +
+  ggtitle("Substitutions against count interaction", "English and Japanese songs")
+
+ggsave(filename = 'figures/model_plot.png', plot = plot_1)
