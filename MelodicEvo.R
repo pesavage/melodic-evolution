@@ -116,11 +116,11 @@ std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9381823
 
 ##### Model data ####
 # First make the dataset - this relies on the above code being run.
-# source('reviewer_data.R')
+# This also creates the model figure
+source('substitution_data.R')
 
 # Then build the models. This takes some time. 
-# source('reviewer_model.R')
-
+source('substitution_model.R')
 
 # Write R version and packages
 # If you are reproducing these results, then please check you have the same 
