@@ -2,29 +2,14 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 
+source('helper.R')
+
 ## Data needs these columns:
 # Total = Frequency of note change (bidirectional)
 # DistanceSemitone = Semitone distance
 # NoteTotal1 = Frequency of the first note in a pair
 # NoteTotal2 = Frequency  of the second note in a pair
 # MinTotal = Minimum of NoteTotal1 and NoteTotal2
-
-# Loading the substitution matrix containing the frequencies 
-# and substitutions 
-get_substitutions = function(substitution_matrix){
-  substitution_matrix = as.matrix(substitution_matrix)
-  substitution_matrix = substitution_matrix[,1:ncol(substitution_matrix)]
-  colnames(substitution_matrix)[1] = "-"
-  
-  substitutions_long = data.frame(col=colnames(substitution_matrix)[col(substitution_matrix)], 
-                                  row=rownames(substitution_matrix)[row(substitution_matrix)], 
-                                  mutation_count=c(substitution_matrix))
-  
-  substitutions_long = substitutions_long[!is.na(substitutions_long$mutation_count),]
-  substitutions_long$mutation_count[substitutions_long$col == substitutions_long$row] = 0
-
-  list(substitutions = substitutions_long)  
-}
 
 english_substitutionmatrix = read.csv('results/english_SubstitutionMatrix.csv', 
                                row.names = 1, nrows = 13) # last row is mutability 
