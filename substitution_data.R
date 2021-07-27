@@ -43,6 +43,9 @@ semitonal_distance = semitonal_distance[,2:ncol(semitonal_distance)]
 semitonal_distance = apply(semitonal_distance, 2, as.numeric)
 rownames(semitonal_distance) = colnames(semitonal_distance)
 
+semitonal_distance[upper.tri(semitonal_distance)] = 
+  t(semitonal_distance)[upper.tri(semitonal_distance)]
+
 semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_distance)], 
                             row=rownames(semitonal_distance)[row(semitonal_distance)], 
                             semitonal_distance=c(semitonal_distance))
@@ -70,6 +73,9 @@ model_df = model_df[!idx,]
 new_semitones = read_xlsx('data/SubstitutionMatrices.xlsx', 
                           sheet = "Large intervals")
 
+# Remove 16 semitone distances (unjustifiable outlier)
+new_semitones = new_semitones[new_semitones$semitone_distance < 16,]
+
 for(i in 1:nrow(new_semitones)){
   row = new_semitones[i,]
   existingrow_idx = which(row$Note1 == model_df$note1 & row$Note2 == model_df$note2)
@@ -95,6 +101,9 @@ for(i in 1:nrow(new_semitones)){
 
 functional_substitutions = read_xlsx('data/SubstitutionMatrices.xlsx', 
                                 sheet = "Functional intervals")
+
+# remove 16 semitonal distance 
+functional_substitutions = functional_substitutions[functional_substitutions$semitone_distance < 16,]
 
 model_df$functional_change = "NF-NF"
 

@@ -11,123 +11,126 @@ data_summary <- function(x) {
 # Calculate mutation rates for different functional types
 MelodicEvoAnalysis = function(s, name){
   mut<-s[,c(1,13:20)]
-  mut$nFull<-str_length(mut[,2])
-  mut$nOrn<-str_length(mut[,3])
-  mut$nFin<-str_length(mut[,4])
-  mut$nStr<-str_length(mut[,5])
-  mut$nUnStr<-mut$nFull-rowSums(mut[,11:13])
-  mut$nOrnMut<-str_length(mut[,6])
-  mut$nFinMut<-str_length(mut[,7])
-  mut$nStrMut<-str_length(mut[,8])
-  mut$nUnStrMut<-str_length(mut[,9])
   
-  mut$FinMutRate<-mut$nFinMut/mut$nFin
-  mut$StrMutRate<-mut$nStrMut/mut$nStr
-  mut$UnStrRate<-mut$nUnStrMut/mut$nUnStr
-  mut$OrnMutRate<-mut$nOrnMut/mut$nOrn
-  mut$StrongFunctionRate<-(mut$nFinMut+mut$nStrMut)/(mut$nFin+mut$nStr)
-  mut$WeakFunctionRate<-(mut$nUnStrMut+mut$nOrnMut)/(mut$nUnStr+mut$nOrn)
+  s$n_notes      = str_length(s$Full.note.sequence..unaligned.)
+  s$n_ornamental = str_length(s$Ornamental.notes)
+  s$n_final      = str_length(s$Final.note)
+  s$n_stressed   = str_length(s$Stressed.notes)
+  s$n_unstressed = s$n_notes - 
+    rowSums(s[,c("n_ornamental", "n_final", "n_stressed")]) 
   
-  print(sum(mut[,15:18])) #no. of total mutations 
-  print(length(mut$FinMutRate))
-  print(sum(!is.na(mut$OrnMutRate))) #no. of melodies with ornamental notes
-  print(sum(is.na(mut$OrnMutRate))) #no. of melodies without ornamental notes
+  s$n_ornamentalmutations = str_length(s$Ornamental.mutations)
+  s$n_finalmutations      = str_length(s$Final.mutations)
+  s$n_stressedmutations   = str_length(s$Stress.mutations)
+  s$n_unstressedmutations = str_length(s$Unstressed.mutations)
   
-  ####Compare/plot
+  s$finalmutation_rate      = s$n_finalmutations / s$n_final
+  s$stressedmutation_rate   = s$n_stressedmutations / s$n_stressed
+  s$unstressedmutation_rate = s$n_unstressedmutations / s$n_unstressed
+  s$ornamentalmutation_rate = s$n_ornamentalmutations / s$n_ornamental
   
-  #mutational distance 
-  m <- s[!duplicated(mut$PairNo),] #only using one value per pair, since substitution numbers are identical between variant
-  semitone<-colSums(m[,21:31],na.rm=TRUE) 
-  
-  #grouped by 2-7 interval size
-  interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
-  print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
-  
-  jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
-  plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
-  axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
-  axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
-  dev.off()
-  
-  #grouped by # of semitones
-  print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
-  
-  jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
-  plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
-  axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
-  axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
-  dev.off()
-  
-  #Function
-  #Strong vs. weak
-  data_wide <- mut[ , c(23:24,1)]
-  
-  #Average rates for each pair
-  out <- matrix(NA, nrow=0, ncol=3)
-  for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
-    rates<-colMeans(data_wide[(i*2-1):(i*2),],na.rm=TRUE)
-    out <- rbind(out,rates)
-  }
-  data_wide<-as.data.frame(out)
-  
-  #Check sample sizes
-  length(data_wide$StrongFunctionRate) #no. of pairs
+  s$strongfunction_rate = (s$n_finalmutations + s$n_stressedmutations) / (s$n_final + s$n_stressed)
+  s$weakfunction_rate   = (s$n_unstressedmutations + s$n_ornamentalmutations) /
+    (s$n_unstressed + s$n_ornamental) 
 
-  #Make violin plot
   
-  #plot
-  violin_df = data_wide[,1:2] %>% 
-          gather(key="MeasureType", value="Val")
-  
-  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"))
-  ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-          geom_violin() +
-          stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
-          geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
-          ylim(0,0.4) + 
-          theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
-  dev.off()
-  
-  #t tests
-  print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
-  print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE)) #unpaired t-test
-  
-  
-  #For all four functional types
-  data_wide <- mut[ , c(19:22,1)]
-  
-  #Average rates for each pair
-  out <- matrix(NA, nrow=0, ncol=5)
-  for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
-    rates<-colMeans(data_wide[(i*2-1):(i*2),],na.rm=TRUE)
-    out <- rbind(out,rates)
-  }
-  data_wide<-as.data.frame(out)
-  
-  #Check sample sizes
-  length(data_wide$FinMutRate) #no. of pairs
-  sum(!is.na(data_wide$OrnMutRate)) #no. of pairs with ornamental notes
-  sum(is.na(data_wide$OrnMutRate)) #no. of pairs without ornamental notes
-  
-  #Make violin plot
-  violin_df = data_wide[,1:4] %>% 
-          gather(key="MeasureType", value="Val") 
-  
-  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"))
-  ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-          geom_violin() + 
-          stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
-          geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
-          ylim(0,1) + 
-          theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
-  dev.off()
-  
-  #t-tests
-  print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
-  print(t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE))
-  print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE))
-  colMeans(data_wide,na.rm=TRUE)
-  length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
+  single_song = s[!duplicated(mut$PairNo),]
+  # only using one value per pair, since substitution numbers are identical between variant
+  # ####Compare/plot
+  # 
+  # #mutational distance 
+  # m <- s[!duplicated(mut$PairNo),] 
+  # semitone<-colSums(m[,21:31],na.rm=TRUE) 
+  # 
+  # #grouped by 2-7 interval size
+  # interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
+  # print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
+  # 
+  # jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
+  # plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
+  # axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
+  # axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
+  # dev.off()
+  # 
+  # #grouped by # of semitones
+  # print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
+  # 
+  # jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
+  # plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
+  # axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
+  # axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
+  # dev.off()
+  # 
+  # #Function
+  # #Strong vs. weak
+  # data_wide <- mut[ , c(23:24,1)]
+  # 
+  # #Average rates for each pair
+  # out <- matrix(NA, nrow=0, ncol=3)
+  # for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
+  #   rates<-colMeans(data_wide[(i*2-1):(i*2),],na.rm=TRUE)
+  #   out <- rbind(out,rates)
+  # }
+  # data_wide<-as.data.frame(out)
+  # 
+  # #Check sample sizes
+  # length(data_wide$StrongFunctionRate) #no. of pairs
+  # 
+  # #Make violin plot
+  # 
+  # #plot
+  # violin_df = data_wide[,1:2] %>% 
+  #         gather(key="MeasureType", value="Val")
+  # 
+  # jpeg(paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"))
+  # ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
+  #         geom_violin() +
+  #         stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
+  #         geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
+  #         ylim(0,0.4) + 
+  #         theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  # dev.off()
+  # 
+  # #t tests
+  # print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
+  # print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE)) #unpaired t-test
+  # 
+  # 
+  # #For all four functional types
+  # data_wide <- mut[ , c(19:22,1)]
+  # 
+  # #Average rates for each pair
+  # out <- matrix(NA, nrow=0, ncol=5)
+  # for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
+  #   rates<-colMeans(data_wide[(i*2-1):(i*2),],na.rm=TRUE)
+  #   out <- rbind(out,rates)
+  # }
+  # data_wide<-as.data.frame(out)
+  # 
+  # #Check sample sizes
+  # length(data_wide$FinMutRate) #no. of pairs
+  # sum(!is.na(data_wide$OrnMutRate)) #no. of pairs with ornamental notes
+  # sum(is.na(data_wide$OrnMutRate)) #no. of pairs without ornamental notes
+  # 
+  # #Make violin plot
+  # violin_df = data_wide[,1:4] %>% 
+  #         gather(key="MeasureType", value="Val") 
+  # 
+  # jpeg(paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"))
+  # ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
+  #         geom_violin() + 
+  #         stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
+  #         geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
+  #         ylim(0,1) + 
+  #         theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  # dev.off()
+  # 
+  # #t-tests
+  # print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
+  # print(t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE))
+  # print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE))
+  # colMeans(data_wide,na.rm=TRUE)
+  # length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
   
   ####Substitution matrix:
   indel<-colSums(m[,32:43],na.rm=TRUE) 
@@ -171,9 +174,6 @@ MelodicEvoAnalysis = function(s, name){
   unchanged<-c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13])
   changed<-colSums(full.mat)[2:13] 
   total<-changed+unchanged
-  print("CHANGED")
-  print(changed)
-  print("MUTABILITY")
   (mutability<-changed/total)
   
   print(mutability)
