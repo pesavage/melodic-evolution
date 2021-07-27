@@ -192,8 +192,7 @@ english_modeldata  = get_data(english_raw)
 japanese_modeldata = get_data(japanese_raw)
 
 model_data = rbind(english_modeldata, japanese_modeldata)
+model_data$society = rep(c("English", "Japanese"), 
+                         each = nrow(english_modeldata))
 
 write.csv(model_data, 'results/model_data.csv')
-
-d = read.csv('results/reviewer_wonf_f_modeldata.csv')
-dim(d)
