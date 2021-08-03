@@ -261,4 +261,9 @@ MelodicEvoAnalysis = function(s, name){
   jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
   barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7, main = name)
   dev.off()
+  
+  # Return objects for testing
+  list(mut = mut, interval = interval, semitone, strongweak = strong_weak,
+       functional_types = data_wide, song_counts = diag(mat)[2:ncol(mat)],
+       total = total, note_occurances = note_occurances)
 }

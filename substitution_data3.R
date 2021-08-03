@@ -186,8 +186,6 @@ raw_data = raw_data[!duplicated(raw_data$PairNo),]
 english_raw  = raw_data[raw_data$Language == "English",]
 japanese_raw = raw_data[raw_data$Language == "Japanese",]
 
-df = english_raw
-
 english_modeldata  = get_data(english_raw)
 japanese_modeldata = get_data(japanese_raw)
 

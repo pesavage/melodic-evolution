@@ -55,30 +55,10 @@ semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_dista
 end_dataframe = left_join(end_dataframe, semitonal_long, by = c("note1" = "row", 
                                                                 "note2" = "col"))
 
-# Get counts of note pair substitutions
+# Get counts of note occurrences 
 english_notecounts = get_notecounts(raw_english, notes)
 japanese_notecounts = get_notecounts(raw_japanese, notes)
 
-# Get counts of note occurrences 
-unique_notes = function(x){
-  z = unlist(strsplit(x = x, split = ""))
-  paste(z, collapse = "")
-}
-
-english_notes = raw_english %>% 
-  group_by(PairNo) %>% 
-  summarize(notes = unique_notes(Full.note.sequence..aligned.)
-              )
-english_splitnotes = lapply(english_notes, function(x) 
-  unlist(strsplit(x = x, split = "")))
-english_total = unlist(english_splitnotes)
-table(english_total)
-
-japanese_notes = raw_japanese$Full.note.sequence..aligned.
-japanese_splitnotes = lapply(japanese_notes, function(x) 
-  unlist(strsplit(x = x, split = "")))
-japanese_total = unlist(japanese_splitnotes)
-table(japanese_total)
 
 
 # Number of Notes in each song
