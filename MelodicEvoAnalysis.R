@@ -28,10 +28,10 @@ MelodicEvoAnalysis = function(s, name){
   mut$StrongFunctionRate<-(mut$nFinMut+mut$nStrMut)/(mut$nFin+mut$nStr)
   mut$WeakFunctionRate<-(mut$nUnStrMut+mut$nOrnMut)/(mut$nUnStr+mut$nOrn)
   
-  sum(mut[,15:18]) #no. of total mutations 
-  length(mut$FinMutRate)
-  sum(!is.na(mut$OrnMutRate)) #no. of melodies with ornamental notes
-  sum(is.na(mut$OrnMutRate)) #no. of melodies without ornamental notes
+  print(sum(mut[,15:18])) #no. of total mutations 
+  print(length(mut$FinMutRate))
+  print(sum(!is.na(mut$OrnMutRate))) #no. of melodies with ornamental notes
+  print(sum(is.na(mut$OrnMutRate))) #no. of melodies without ornamental notes
   
   ####Compare/plot
   
@@ -171,6 +171,9 @@ MelodicEvoAnalysis = function(s, name){
   unchanged<-c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13])
   changed<-colSums(full.mat)[2:13] 
   total<-changed+unchanged
+  print("CHANGED")
+  print(changed)
+  print("MUTABILITY")
   (mutability<-changed/total)
   
   print(mutability)
@@ -258,4 +261,9 @@ MelodicEvoAnalysis = function(s, name){
   jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
   barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7, main = name)
   dev.off()
+  
+  # Return objects for testing
+  list(mut = mut, interval = interval, semitone, strongweak = strong_weak,
+       functional_types = data_wide, song_counts = diag(mat)[2:ncol(mat)],
+       total = total, note_occurances = note_occurances)
 }

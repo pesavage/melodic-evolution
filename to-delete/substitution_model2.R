@@ -4,116 +4,111 @@ library(ggplot2)
 library(tidybayes)
 library(bayesplot)
 library(dplyr)
+library(projpred)
 
-melodic_df = read.csv('results/reviewer_modeldata.csv')
+# melodic_df = read.csv('results/reviewer_modeldata.csv')
+# melodic_df = read.csv("results/reviewer_wonf_f_modeldata.csv")
+melodic_df = read.csv('results/model_data.csv')
 seed = 88878
 
 melodic_df$std_semitonaldistance = melodic_df$semitonal_distance / max(melodic_df$semitonal_distance)
-melodic_df$std_count1 = melodic_df$count_1 / max(melodic_df$count_1)
-melodic_df$std_count2 = melodic_df$count_2 / max(melodic_df$count_2)
-
-# change levels
-melodic_df$functional_change = factor(melodic_df$functional_change, levels = c("NF-NF", "F-NF", "F-F"))
+melodic_df$society = as.factor(melodic_df$society)
 
 # Null model
 fit.1 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ std_count1:std_count2,
-      prior(normal(0, 1), coef = "std_count1:std_count2"),
+      substitution_count | trials(functional_total) ~ frequency1:frequency2,
+      prior(normal(0, 1), coef = "frequency1:frequency2"),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
-      file = "results/null_bin")
+      file = "results/null_bin2")
 
 #### Bi-Variate #### 
 # "Y~society"            
 fit.2.1 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2:society,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2:society,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
-      file = "results/societyrslopes_bin")
+      file = "results/societyrslopes_bin2")
 
 # "Y~semitonal_distance" 
 fit.2.2 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2 + std_semitonaldistance,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2 + std_semitonaldistance,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       sample_prior = TRUE, control = list(max_treedepth = 15),
       save_pars = save_pars(all = TRUE),
-      file = "results/semitonal_bin")
+      file = "results/semitonal_bin2")
 
 # "Y~functional"  
 fit.2.3 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2 + functional_change,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2 + functional_change,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       sample_prior = TRUE, control = list(max_treedepth = 15),
       save_pars = save_pars(all = TRUE),
-      file = "results/functional_bin")
+      file = "results/functional_bin2")
 
 #### Tr-Variate ####
 # "Y~society+semitonal_distance"  
 fit.3.1 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2:society + std_semitonaldistance,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2:society + std_semitonaldistance,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       sample_prior = TRUE, control = list(max_treedepth = 15),
       save_pars = save_pars(all = TRUE),
-      file = "results/societysemitonal_bin")
+      file = "results/societysemitonal_bin2")
 
 
 # "Y~society+functional"       
 fit.3.2 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2:society + functional_change,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2:society + functional_change,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       sample_prior = TRUE, control = list(max_treedepth = 15),
       save_pars = save_pars(all = TRUE),
-      file = "results/societyfunctional_bin")
+      file = "results/societyfunctional_bin2")
 
 # "Y~semitonal_distance+functional"
 fit.3.3 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2 + std_semitonaldistance + functional_change,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2 + std_semitonaldistance + functional_change,
       prior(normal(0, 1), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       sample_prior = TRUE, control = list(max_treedepth = 15),
       save_pars = save_pars(all = TRUE),
-      file = "results/semitonalfunctional_bin")
+      file = "results/semitonalfunctional_bin2")
 
 #### Full model ####
 # "Y~society+semitonal_distance+functional"
 fit.4 <-
   brm(data = melodic_df, family = binomial,
-      mutation_count | trials(functional_total) ~ 
-        std_count1:std_count2:society + functional_change + std_semitonaldistance,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2:society + functional_change + std_semitonaldistance,
       prior(normal(0, 5), class = b),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
-      file = "results/fullrslopes_bin")
+      file = "results/fullrslopes_bin2")
 
 summary(fit.4)
 
-bayes_R2(fit.4)
 
 #### Model comparison ####
-
-bayes_factor(fit.3.3, fit.4)
-
 loo_comparison  = loo(fit.1, 
                         fit.2.1, fit.2.2, fit.2.3, 
                         fit.3.1, fit.3.2, fit.3.3,
@@ -139,11 +134,15 @@ plot_1 = ggplot(plot_loo, aes(x = elpd_diff, y = models)) +
   geom_vline(xintercept = 0, linetype="dashed") + 
   ylab("") + xlab("ELPD Difference") + 
   theme_light() + 
-  theme(text = element_text(size=20, family="serif"))
+  theme(text = element_text(size=16, family="serif"))
 
-ggsave(plot_1, filename = "figures/loo_compare.png")
+ggsave(plot_1, filename = "figures/loo_compare_nonff.png")
 
 mcmc_areas(as.matrix(fit.4)[,2:6])
+
+bayes_R2(fit.4)
+bayes_R2(fit.4) - bayes_R2(fit.3.1) # society + semitonal distance
+bayes_R2(fit.4) - bayes_R2(fit.3.2) # society + Function
 
 ## 
 
@@ -152,9 +151,9 @@ post.4 = posterior_samples(fit.4)
 quantile(post.4$b_std_semitonaldistance, c(.5, .025, .75))
 quantile(inv_logit_scaled(post.4$b_std_semitonaldistance), c(.5, .025, .75))
 
-newdata = data.frame(std_count1 = median(melodic_df$std_count1),
-                     std_count2 = median(melodic_df$std_count2),
-                     functional_change = "NF-NF",
+newdata = data.frame(frequency1 = median(melodic_df$frequency1),
+                     frequency2 = median(melodic_df$frequency2),
+                     functional_change = "s",
                      std_semitonaldistance = c(0.0625, 0.1250, 0.1875, 0.2500, 0.3125, 0.3750, 0.4375),
                      society = "English", 
                      functional_total = 16240 + 16240)
@@ -171,13 +170,22 @@ plot_2 = ggplot(pred.4, aes(x = semitones, y = Estimate)) +
   theme_light() + 
   theme(text = element_text(size=20, family="serif"))
 
-ggsave(plot_2, filename = "figures/semitonal_distance.png")
+ggsave(plot_2, filename = "figures/semitonal_distance_nonff.png")
+
+# soceity 
+post.4.1 = posterior_samples(fit.4)
+
+diff_a =  post.4.1$`b_frequency1:frequency2:societyJapanese` -  post.4.1$`b_frequency1:frequency2:societyEnglish`
+
+diff_b = inv_logit_scaled(post.4.1$`b_frequency1:frequency2:societyJapanese`) - inv_logit_scaled(post.4.1$`b_frequency1:frequency2:societyEnglish`)
+
+quantile(diff_a, prob = c(.5, .025, .75))
+quantile(diff_b, prob = c(.5, .025, .75))
 
 ## Function
-
-newdata = data.frame(std_count1 = median(melodic_df$std_count1),
-                     std_count2 = median(melodic_df$std_count2),
-                     functional_change = c("NF-NF", "F-F", "F-NF"),
+newdata = data.frame(frequency1 = median(melodic_df$frequency1),
+                     frequency2 = median(melodic_df$frequency2),
+                     functional_change = c("s", "w"),
                      std_semitonaldistance = c(0.1250),
                      society = "English", 
                      functional_total = 16240 + 16240)

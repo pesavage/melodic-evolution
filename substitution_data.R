@@ -1,5 +1,8 @@
 library(readxl)
 library(dplyr)
+library(ggplot2)
+
+source('helper.R')
 
 ## Data needs these columns:
 # Total = Frequency of note change (bidirectional)
@@ -7,23 +10,6 @@ library(dplyr)
 # NoteTotal1 = Frequency of the first note in a pair
 # NoteTotal2 = Frequency  of the second note in a pair
 # MinTotal = Minimum of NoteTotal1 and NoteTotal2
-
-# Loading the substitution matrix containing the frequencies 
-# and substitutions 
-get_substitutions = function(substitution_matrix){
-  substitution_matrix = as.matrix(substitution_matrix)
-  substitution_matrix = substitution_matrix[,1:ncol(substitution_matrix)]
-  colnames(substitution_matrix)[1] = "-"
-  
-  substitutions_long = data.frame(col=colnames(substitution_matrix)[col(substitution_matrix)], 
-                                  row=rownames(substitution_matrix)[row(substitution_matrix)], 
-                                  mutation_count=c(substitution_matrix))
-  
-  substitutions_long = substitutions_long[!is.na(substitutions_long$mutation_count),]
-  substitutions_long$mutation_count[substitutions_long$col == substitutions_long$row] = 0
-
-  list(substitutions = substitutions_long)  
-}
 
 english_substitutionmatrix = read.csv('results/english_SubstitutionMatrix.csv', 
                                row.names = 1, nrows = 13) # last row is mutability 
@@ -34,7 +20,6 @@ japanese_substitutionmatrix = read.csv('results/japanese_SubstitutionMatrix.csv'
 japanese_output = get_substitutions(japanese_substitutionmatrix)
 
 ## Combine English & Japanese
-
 substitutions_long = rbind(english_output$substitutions, japanese_output$substitutions)
 substitutions_long$society = rep(c("English", "Japanese"), each = nrow(english_output$substitutions))
 
@@ -49,18 +34,6 @@ japanese_count$society = "Japanese"
 
 counts = rbind(english_count, japanese_count)
 
-# # mutability 
-# english_mutability = read.csv('results/english_mutability.csv')
-# colnames(english_mutability) = c("note", "mutability")
-# english_mutability$society = "English"
-# 
-# japanese_mutability = read.csv('results/japanese_mutability.csv')
-# colnames(japanese_mutability) = c("note", "mutability")
-# japanese_mutability$society = "Japanese"
-# 
-# mutability = rbind(japanese_mutability, english_mutability)
-
-
 # Load and Format semi-tonal data
 semitonal_distance = read_xlsx("SubstitutionSize_distancematrices.xlsx", 
                                sheet = "Semitone distance matrix") %>%
@@ -69,6 +42,9 @@ semitonal_distance = read_xlsx("SubstitutionSize_distancematrices.xlsx",
 semitonal_distance = semitonal_distance[,2:ncol(semitonal_distance)]
 semitonal_distance = apply(semitonal_distance, 2, as.numeric)
 rownames(semitonal_distance) = colnames(semitonal_distance)
+
+semitonal_distance[upper.tri(semitonal_distance)] = 
+  t(semitonal_distance)[upper.tri(semitonal_distance)]
 
 semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_distance)], 
                             row=rownames(semitonal_distance)[row(semitonal_distance)], 
@@ -81,10 +57,6 @@ model_df = model_df %>% filter(col != "-") %>% filter(row != "-")
 # Add frequency
 model_df = left_join(model_df, counts, by = c("col" = "note", "society" = "society")) 
 model_df = left_join(model_df, counts, by = c("row" = "note", "society" = "society"))
-
-# Add Mutability
-# model_df = left_join(model_df, mutability, by = c("col" = "note", "society" = "society"))
-# model_df = left_join(model_df, mutability, by = c("row" = "note", "society" = "society"))
 
 colnames(model_df) = c("note1", "note2", "mutation_count", "society",
                        "semitonal_distance", "count_1", "count_2")
@@ -100,6 +72,9 @@ model_df = model_df[!idx,]
 # Make semi-tonal adjustments based on manual calculations
 new_semitones = read_xlsx('data/SubstitutionMatrices.xlsx', 
                           sheet = "Large intervals")
+
+# Remove 16 semitone distances (unjustifiable outlier)
+new_semitones = new_semitones[new_semitones$semitone_distance < 16,]
 
 for(i in 1:nrow(new_semitones)){
   row = new_semitones[i,]
@@ -124,17 +99,11 @@ for(i in 1:nrow(new_semitones)){
   model_df = rbind(model_df, new_row)
 }
 
-## Calculate mutability
-# english_unchanged = diag(as.matrix(english_substitutionmatrix[2:13,2:13]))
-# english_changed = colSums(english_substitutionmatrix[,2:13], na.rm = TRUE) + english_substitutionmatrix[2:13,1]
-# english_mutability = english_changed / english_changed + english_unchanged
-# unchanged<-c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13])
-# changed<-colSums(full.mat)[2:13] 
-# total<-changed+unchangeda
-# (mutability<-changed/total)
-
 functional_substitutions = read_xlsx('data/SubstitutionMatrices.xlsx', 
                                 sheet = "Functional intervals")
+
+# remove 16 semitonal distance 
+functional_substitutions = functional_substitutions[functional_substitutions$semitone_distance < 16,]
 
 model_df$functional_change = "NF-NF"
 
@@ -206,5 +175,91 @@ function_total = data.frame(
 model_df = left_join(model_df, function_total, 
                      by = c("society", "functional_change"))
 
-write.csv(model_df, "results/reviewer_modeldata.csv",
+model_df = model_df[model_df$functional_change != "F-NF",]
+model_df$functionalchange_bin = ifelse(model_df$functional_change == "NF-NF", 0, 1)
+model_df$functional_total = model_df$functional_total / 2
+
+write.csv(model_df, "results/reviewer_wonf_f_modeldata.csv",
           row.names = FALSE, fileEncoding = 'utf-8')
+
+# Make main figure
+model_df$functional_change = ifelse(model_df$functional_change == "NF-NF", "Weaker function",
+                                    "Strong function")
+model_df$functionalchange_bin = ifelse(model_df$functional_change == "NF-NF", 0, 1)
+
+plot_1 = ggplot(model_df, aes(y = mutation_count, 
+                       x = count_1 * count_2, size = semitonal_distance)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
+  geom_point(shape = 21, aes(fill = functional_change), alpha = 0.8) +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  facet_wrap(~society, scales = "free") + 
+  scale_x_continuous(labels = scales::comma) +
+  theme(legend.position = c(0.12, 0.94), legend.title = element_blank(),
+        legend.background=element_rect(fill = alpha("white", 0.0)),
+        text = element_text(size=14)) +
+  scale_size_continuous(guide = "none") +
+  ggtitle("Substitutions against count interaction", "English and Japanese songs")
+
+ggsave(filename = 'figures/model_plot.png', plot = plot_1)
+
+
+# With model response
+
+
+plot_2 = ggplot(model_df, aes(y = mutation_count / functional_total, 
+                              x = count_1 * count_2, size = semitonal_distance)) +
+  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x, col = "#6DA0FD") + 
+  geom_point(shape = 21, aes(fill = functional_change), alpha = 0.8) +
+  ylab("Number of Subsitutions") + 
+  xlab("Note 1 count x Note 2 count") +
+  facet_wrap(~society, scales = "free_x") + 
+  scale_x_continuous(labels = scales::comma) +
+  theme(legend.position="bottom", legend.title = element_blank(),
+        legend.background=element_rect(fill = alpha("white", 0.0)),
+        text = element_text(size=14)) +
+  guides(size = guide_legend(override.aes = list(linetype = 0)))  +
+  ggtitle("Substitutions against count interaction", "English and Japanese songs")
+
+# annotate
+ann_text1 <- data.frame(mutation_count = 55,
+                       functional_total = 16240,
+                       count_1 = 2669 + 490,
+                       count_2 = 1501,
+                       semitonal_distance = 2,
+                       society = "English",
+                       lab = "C-D \n 2 Semitones")
+
+ann_text2 <- data.frame(mutation_count = 23,
+                        functional_total = 7424,
+                        count_1 = 1144 + 175,
+                        count_2 = 876,
+                        semitonal_distance = 2,
+                        society = "Japanese",
+                        lab = "C-D \n 2 Semitones")
+
+ann_text3 <- data.frame(mutation_count = 1,
+                        functional_total = 7274,
+                        count_1 = 1144 + 175,
+                        count_2 = 876,
+                        semitonal_distance = 10,
+                        society = "Japanese",
+                        lab = "D-C \n 10 Semitones")
+
+ann_text4 <- data.frame(mutation_count = 0,
+                        functional_total = 16240,
+                        count_1 = 2669 + 490,
+                        count_2 = 1501,
+                        semitonal_distance = 10,
+                        society = "English",
+                        lab = "D-C \n 10 Semitones")
+
+plot_2 = plot_2 + 
+  geom_label(data = ann_text1, label = ann_text1$lab, show.legend = FALSE, size = 2, col = "#F13C2C") + 
+  geom_label(data = ann_text2, label = ann_text2$lab, show.legend = FALSE, size = 2, col = "#F13C2C") +
+  geom_label(data = ann_text3, label = ann_text3$lab, show.legend = FALSE, size = 2, col = "#F13C2C") +
+  geom_label(data = ann_text4, label = ann_text3$lab, show.legend = FALSE, size = 2, col = "#F13C2C")  
+
+plot_2
+ggsave(filename = 'figures/dividedresponse_plot.png', plot = plot_2)
+
