@@ -105,7 +105,38 @@ fit.4 <-
       save_pars = save_pars(all = TRUE),
       file = "results/fullrslopes_bin2")
 
+fit.4.2 <-
+  brm(data = melodic_df, family = binomial,
+      substitution_count | trials(functional_total) ~ society + 
+        frequency1:frequency2:society + functional_change * std_semitonaldistance,
+      prior(normal(0, 5), class = b),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      save_pars = save_pars(all = TRUE))
+
+fit.4.3 <-
+  brm(data = melodic_df, family = binomial,
+      substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2:society + functional_change * std_semitonaldistance,
+      prior(normal(0, 5), class = b),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      save_pars = save_pars(all = TRUE))
+
 summary(fit.4)
+
+fit.4.4 <-
+  brm(data = melodic_df, family = binomial,
+      bf(substitution_count | trials(functional_total) ~ 
+        frequency1:frequency2:society + functional_change + 
+          b1 * std_semitonaldistance + b2 * std_semitonaldistance^2, 
+        b1 + b2 ~ 1, nl = TRUE),
+      c(prior(normal(0, 5), class = b),
+        prior(normal(1, 2), nlpar = "b1"),
+          prior(normal(0, 2), nlpar = "b2")),
+      seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
+      control = list(max_treedepth = 15), sample_prior = TRUE,
+      save_pars = save_pars(all = TRUE))
 
 
 #### Model comparison ####
@@ -117,12 +148,12 @@ loo_comparison  = loo(fit.1,
 plot_loo = data.frame(loo_comparison$diffs)
 plot_loo$models = c("Society + Semitonal distance + Function",
                     "Semitonal distance + Function", 
-                    "Society + Semitonal distance",
-                    "Semitonal distance", 
-                    "Society + Function",
+                    "Semitonal distance",
+                    "Society + Semitonal distance", 
                     "Function",
-                    "Society",
-                    "Null")
+                    "Null",
+                    "Society + Function",
+                    "Society")
 
 plot_loo$models = factor(plot_loo$models, 
                          levels = plot_loo$models[order(plot_loo$elpd_diff)])

@@ -45,6 +45,8 @@ get_data = function(df){
   farweak_names = model_matrix$ID[model_matrix$semitonal_distance >= 6 & model_matrix$functional_change == "w"]
   farstrong_names = str_replace(farweak_names, "w", "s")
   
+  assert_that(length(farstrong_names) == 66)
+  
   farstrong_missing = farstrong_names[!farstrong_names %in% model_matrix$ID]
   farstrong_settings = sapply(farstrong_missing, function(c) 
     unlist(
@@ -121,11 +123,22 @@ get_data = function(df){
   # We need a count of note occurrences. 
   # Note counts are determined by counting the number of times notes occur
   # in one of the song pairs + insertions between the songs
+  # song_counts = 
+  #   sapply(notes, function(n)
+  #     sum(
+  #       str_count(df$Full.note.sequence..unaligned., n)
+  #     ))
+  
   song_counts = 
-    sapply(notes, function(n)
-      sum(
-        str_count(df$Full.note.sequence..unaligned., n)
-      ))
+    sapply(notes, function(n) {
+      total = sum(str_count(df$Full.note.sequence..unaligned., n))
+      ornamental_mutations = sum(str_count(df$Ornamental.mutations, n))
+      final_mutations = sum(str_count(df$Final.mutations, n))
+      stress_mutations = sum(str_count(df$Stress.mutations, n))
+      unstressed_mutations = sum(str_count(df$Unstressed.mutations, n))
+      # Total - all mutations gives the note count
+      total - (ornamental_mutations + final_mutations + stress_mutations + unstressed_mutations)
+    })
   
   insertion_cols = str_detect(colnames(df), "^[A-Za-z]{1}\\.$")
   insertion_counts = colSums(df[,insertion_cols], na.rm = TRUE)
@@ -174,9 +187,12 @@ get_data = function(df){
   typetotal_df = data.frame(functional_change = c("w", "s"), 
                             functional_total = c(weak_function, strong_function))
   
+  # dividing by two accounts for the fact that one substitution 
+  # involves two melodies
+  typetotal_df$functional_total = typetotal_df$functional_total / 2
+  
   model_matrix = left_join(model_matrix, typetotal_df, by = "functional_change")
-  
-  
+
 }
 
 ## Run function
@@ -192,5 +208,21 @@ japanese_modeldata = get_data(japanese_raw)
 model_data = rbind(english_modeldata, japanese_modeldata)
 model_data$society = rep(c("English", "Japanese"), 
                          each = nrow(english_modeldata))
+
+
+# We should not have any semitonal distances below 16
+assert_that(!any(model_data$semitonal_distance == 16))
+
+# Each soceity should occur 264 times
+assert_that(all(table(model_data$society) == 264))
+
+# There are 66 note pairs for the 8 different categories:
+# 1) English & Japanese societies, 
+# 2) Close and far semitone distances, 
+# 3) Strong and weak functional notes
+# 5 note pairs only have one semitonal distance (6 semitones), because 
+# the note pair has the same distance up and down the scale. Which occur 
+# twice in each society, four times total
+assert_that(nrow(model_data) == (66 * 8) - 4 * 5)
 
 write.csv(model_data, 'results/model_data.csv')
