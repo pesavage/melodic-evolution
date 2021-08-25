@@ -8,7 +8,6 @@ library(patchwork)
 
 #### Data ####
 data = read.csv('MelodicEvoSeq.csv')
-data = data[data$PairNo>0,] # this does nothing
 
 song_frequency = data %>%
   filter(!is.na(NAME_1)) %>%
@@ -38,7 +37,8 @@ uk_sf$nsongs_discrete = cut(uk_sf$n_songs, 5)
 uk_ireland = ggplot() + 
   geom_sf(data = uk_sf, aes(fill = n_songs), color = NA) +
   theme_minimal() +
-  scale_fill_gradientn(colors = orange_colours)
+  scale_fill_gradientn(colors = orange_colours) + 
+  theme(legend.title = element_blank())
 
 #### Japan ####
 japan_sf <- ne_states(country = "japan", 
@@ -52,7 +52,10 @@ japan_sf$n_songs[is.na(japan_sf$n_songs)] = 0
 japan = ggplot() + 
   geom_sf(data = japan_sf, aes(fill = n_songs), color = NA) +
   theme_minimal() +
-  scale_fill_gradientn(colors = orange_colours)
+  xlim(c(127, 150)) + 
+  ylim(c(30, 46)) + 
+  scale_fill_gradientn(colors = orange_colours) + 
+  theme(legend.title = element_blank())
 
 #### USA ####
 usa_sf <- ne_states(country = "United States of America", returnclass = "sf")
@@ -67,6 +70,15 @@ usa = ggplot() +
   theme_minimal() +
   coord_sf(crs = st_crs(2163), xlim = c(-2500000, 2500000), 
            ylim = c(-2300000, 730000)) + 
-  scale_fill_gradientn(colors = orange_colours)
+  scale_fill_gradientn(colors = orange_colours) + 
+  theme(legend.title = element_blank(), 
+        axis.text.x = element_text(angle = 45))
 
-(uk_ireland / usa) | japan
+ggsave(filename = 'figures/ukireland_map.jpeg', plot = uk_ireland)
+ggsave(filename = 'figures/japan_map.jpeg', plot = japan)
+ggsave(filename = 'figures/usa_map.jpeg', plot = usa)
+
+group_plot = (uk_ireland / usa) | japan + 
+  plot_annotation(theme = theme(plot.margin = margin()))
+
+ggsave(filename = 'figures/group_map.jpeg', plot = group_plot)
