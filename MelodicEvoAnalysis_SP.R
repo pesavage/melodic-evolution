@@ -120,10 +120,10 @@ MelodicEvoAnalysis = function(s, name){
     theme_base() + 
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
+          axis.text.x = element_text(angle = 45, hjust=1),
           legend.position = "none") +
     xlab("") + 
     ylab("Stability (% melodic identity)") + 
-    coord_flip() +
     scale_x_discrete(labels = c("strongfunction_rate" = "Strong Function", 
                                 "weakfunction_rate" = "Weak Function")) + 
     scale_y_continuous(labels=function(x) paste0(x,"%")) 
@@ -192,10 +192,10 @@ MelodicEvoAnalysis = function(s, name){
                  size = .6) +
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
+          axis.text.x = element_text(angle = 45, hjust=1),
           legend.position = "none") +
     xlab("") + 
     ylab("Stability (% melodic identity)") + 
-    coord_flip() +
     scale_x_discrete(labels = c("unstressedmutation_rate" = "Unstressed",
                                 "stressedmutation_rate" = "Stressed", 
                                 "finalmutation_rate" = "Final",
