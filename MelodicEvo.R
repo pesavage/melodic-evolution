@@ -1,5 +1,5 @@
 source("install.R")
-
+## Hi Pat
 #If Biostrings is already installed you can comment out the following three lines of code: 
 if (!requireNamespace("BiocManager", quietly = TRUE)){
   install.packages("BiocManager")
