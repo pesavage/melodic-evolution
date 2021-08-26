@@ -39,7 +39,7 @@ full<-read.csv("MelodicEvoSeq.csv", header=TRUE, row.names=1)
 d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 
 ## Source analysis function
-source("MelodicEvoAnalysis.R")
+source("MelodicEvoAnalysis_SP.R")
 
 ##### Calculate mutation rates for different functional types ####
 # Full English subset
