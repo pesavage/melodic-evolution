@@ -95,7 +95,7 @@ MelodicEvoAnalysis = function(s, name){
   length(strong_weak$strongfunction_rate) #no. of pairs
   
   #Make violin plot
-  
+  strong_weak<-strong_weak[,c("PairNo","strongfunction_rate", "weakfunction_rate")]
   #plot
   violin_df = strong_weak %>% 
     dplyr::select(strongfunction_rate, weakfunction_rate) %>% 
@@ -158,7 +158,11 @@ MelodicEvoAnalysis = function(s, name){
   length(functional_types$FinMutRate) #no. of pairs
   sum(!is.na(functional_types$OrnMutRate)) #no. of pairs with ornamental notes
   sum(is.na(functional_types$OrnMutRate)) #no. of pairs without ornamental notes
-  
+  functional_types<-functional_types[,c("finalmutation_rate",                             
+                                        "stressedmutation_rate",
+                                        "unstressedmutation_rate", 
+                                        "ornamentalmutation_rate",
+                                        "PairNo")]
   #Make violin plot
   violin_df = functional_types %>% 
     select(finalmutation_rate, stressedmutation_rate,
