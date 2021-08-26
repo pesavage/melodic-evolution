@@ -15,6 +15,7 @@ MelodicEvoAnalysis = function(s, name){
   require(dplyr)
   require(tidyr)
   require(ggplot2)
+  require(ggthemes)
   
   s$n_notes      = str_length(s$Full.note.sequence..unaligned.)
   s$n_ornamental = str_length(s$Ornamental.notes)
@@ -98,27 +99,38 @@ MelodicEvoAnalysis = function(s, name){
   #plot
   violin_df = strong_weak %>% 
     dplyr::select(strongfunction_rate, weakfunction_rate) %>% 
-    gather(key="MeasureType", value="Val")
+    gather(key="MeasureType", value="Val") %>% 
+    mutate(Val = (1 - Val) * 100)
   
-  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"))
-  ggplot(violin_df, 
+  
+  p1 = ggplot(violin_df, 
          aes(x = reorder(MeasureType, Val), 
              y = Val, 
              fill = MeasureType)) +
-    geom_violin() +
-    stat_summary(fun.data = data_summary, 
-                 geom = "pointrange", 
-                 color = "red", 
-                 width = 1, 
-                 size = .6) + 
+    geom_violin()  + 
     geom_jitter(binaxis = 'y', 
                 stackdir = 'center', 
                 size = 1,
                 position = position_jitter(0.3)) + 
-    ylim(0,0.4) + 
-    theme(axis.text = element_text(size = 21),
-          axis.title = element_text(size = 23, face = "bold"))
-  dev.off()
+    stat_summary(fun.data = data_summary, 
+                 geom = "pointrange", 
+                 color = "red", 
+                 width = 1, 
+                 size = .6) +
+    theme_base() + 
+    theme(axis.text = element_text(size = 14),
+          axis.title = element_text(size = 18, face = "bold"),
+          legend.position = "none") +
+    xlab("") + 
+    ylab("Stability (% melodic identity)") + 
+    coord_flip() +
+    scale_x_discrete(labels = c("strongfunction_rate" = "Strong Function", 
+                                "weakfunction_rate" = "Weak Function")) + 
+    scale_y_continuous(labels=function(x) paste0(x,"%")) 
+  
+  
+  ggsave(filename = 
+           paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"), plot = p1)
   
   #### t-tests ####
   ## paired t-test
@@ -151,30 +163,43 @@ MelodicEvoAnalysis = function(s, name){
   violin_df = functional_types %>% 
     select(finalmutation_rate, stressedmutation_rate,
            unstressedmutation_rate, ornamentalmutation_rate) %>% 
-    gather(key="MeasureType", value="Val") 
+    gather(key="MeasureType", value="Val") %>% 
+    mutate(Val = (1 - Val) * 100)
   
-  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"))
-  ggplot(violin_df, 
-         aes(x = reorder(MeasureType, Val), 
-             y = Val, 
-             fill = MeasureType)) +
-    geom_violin() + 
-    stat_summary(
-      fun.data=data_summary, 
-      geom = "pointrange", 
-      color = "red",
-      width = 1,
-      size = 0.6) + 
-    geom_jitter(
-      binaxis = 'y', 
-      stackdir = 'center', 
-      size = 1,
-      position = position_jitter(0.3)) + 
-    ylim(0,1) + 
-    theme(
-      axis.text = element_text(size = 21),
-      axis.title = element_text(size = 23, face = "bold"))
-  dev.off()
+  violin_df$MeasureType = factor(violin_df$MeasureType, 
+                                 levels = c("ornamentalmutation_rate",
+                                            "unstressedmutation_rate",
+                                            "stressedmutation_rate",
+                                            "finalmutation_rate"))
+  
+  p2 = ggplot(violin_df, 
+              aes(x = reorder(MeasureType, Val), 
+                  y = Val, 
+                  fill = MeasureType)) +
+    geom_violin()  + 
+    geom_jitter(binaxis = 'y', 
+                stackdir = 'center', 
+                size = 1,
+                position = position_jitter(0.3)) + 
+    stat_summary(fun.data = data_summary, 
+                 geom = "pointrange", 
+                 color = "red", 
+                 width = 1, 
+                 size = .6) +
+    theme(axis.text = element_text(size = 14),
+          axis.title = element_text(size = 18, face = "bold"),
+          legend.position = "none") +
+    xlab("") + 
+    ylab("Stability (% melodic identity)") + 
+    coord_flip() +
+    scale_x_discrete(labels = c("unstressedmutation_rate" = "Unstressed",
+                                "stressedmutation_rate" = "Stressed", 
+                                "finalmutation_rate" = "Final",
+                                "ornamentalmutation_rate" = "Ornamental")) +
+    scale_y_continuous(labels=function(x) paste0(x,"%"))
+  
+  ggsave(filename = 
+           paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"), plot = p2)
   
   ### Functional t-tests ####
   print(t.test(functional_types$ornamentalmutation_rate,
