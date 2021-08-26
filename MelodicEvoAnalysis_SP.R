@@ -61,11 +61,10 @@ MelodicEvoAnalysis = function(s, name){
   # Graph of Intervals by Substitution count
   jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
   plot(c(2:7),
-       log10(interval),
-       ylim = c(0,3), pch = 16, xaxt = "n", yaxt = "n", 
-       ylab = "Number of substitutions (log scale)",
-       xlab = "Substitution distance")
-  axis(2, at = c(0,1,2,3), labels = c(1, 10, 100, 1000))
+       interval,
+       pch = 16, xaxt = "n", 
+       ylab = "Number of substitutions",
+       xlab = "Substitution distance (intervals)")
   axis(1, at = 2:7, labels = c("2nd", "3rd", "4th", "5th", "6th", "7th"))
   dev.off()
   
@@ -74,20 +73,19 @@ MelodicEvoAnalysis = function(s, name){
   
   jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
   plot(c(1:11), 
-       log10(semitone),
-       ylim = c(0,3), pch = 16, xaxt = "n", yaxt = "n",
-       ylab = "Number of substitutions (log scale)",
-       xlab = "Substitution distance")
-  axis(2, at = c(0,1,2,3), labels = c(1,10,100,1000))
-  axis(1, at = 1:11, labels = c("1(m2nd)", "2(M2nd)", "3(m3rd)", "4(M3rd)",
-                                "5(P5th)", "6(A4/D5)", "7(P5th)", "8(m6th)",
-                                "9(M6th)", "10(m7th)", "11(M7th)"))
+       semitone,
+       pch = 16, xaxt = "n",
+       ylab = "Number of substitutions",
+       xlab = "Substitution distance (semitones)")
+  axis(1, at = 1:11, labels = c("1", "2", "3", "4",
+                                "5", "6", "7", "8",
+                                "9", "10", "11"))
   dev.off()
 
   #### Function ####
   #Strong vs. weak
   strong_weak = aggregate(s[, c("PairNo", "strongfunction_rate", 
-                              "weakfunction_rate")], 
+                              "weakfunction_rate","PID")], 
                    by = list(PairNo = s$PairNo),
                    FUN = mean)
 
@@ -95,7 +93,7 @@ MelodicEvoAnalysis = function(s, name){
   length(strong_weak$strongfunction_rate) #no. of pairs
   
   #Make violin plot
-  strong_weak<-strong_weak[,c("PairNo","strongfunction_rate", "weakfunction_rate")]
+  strong_weak<-strong_weak[,c("PairNo","strongfunction_rate", "weakfunction_rate","PID")]
   #plot
   violin_df = strong_weak %>% 
     dplyr::select(strongfunction_rate, weakfunction_rate) %>% 
@@ -123,7 +121,7 @@ MelodicEvoAnalysis = function(s, name){
           axis.text.x = element_text(angle = 45, hjust=1),
           legend.position = "none") +
     xlab("") + 
-    ylab("Stability (% melodic identity)") + 
+    ylab("Stability (% identity)") + 
     scale_x_discrete(labels = c("strongfunction_rate" = "Strong Function", 
                                 "weakfunction_rate" = "Weak Function")) + 
     scale_y_continuous(labels=function(x) paste0(x,"%")) 
@@ -138,6 +136,7 @@ MelodicEvoAnalysis = function(s, name){
                strong_weak$strongfunction_rate,
                alternative = "greater",
                paired = TRUE))
+  print(cohensD( x = strong_weak$weakfunction_rate, y = strong_weak$strongfunction_rate, method = "paired"))
   
   # unpaired t-test
   print(t.test(strong_weak$strongfunction_rate,
@@ -145,7 +144,20 @@ MelodicEvoAnalysis = function(s, name){
                alternative = "greater",
                paired=FALSE)) 
   
-  # For all four functional types
+ #Plot difference between strong vs. weak function as function of PID
+  jpeg(paste0("figures/FunctionalDifferenceVsPID_", name, ".jpeg"))
+  plot(strong_weak$PID,
+       ((1 - strong_weak$strongfunction_rate) * 100)- ((1 - strong_weak$weakfunction_rate) * 100),
+       pch = 16, 
+       ylab = "Strong function % identity - weaker function % identity",
+       xlab = "Overall % identity")
+  
+  dev.off()
+  
+  print(cor.test(strong_weak$PID,
+                 ((1 - strong_weak$strongfunction_rate) * 100)- ((1 - strong_weak$weakfunction_rate) * 100)),method="spearman")
+  
+   # For all four functional types
   functional_types = aggregate(s[, c("finalmutation_rate", 
                               "stressedmutation_rate",
                               "unstressedmutation_rate", 
@@ -315,10 +327,10 @@ MelodicEvoAnalysis = function(s, name){
   #####Calculate scale frequencies:
   # extract unique notes/scales
   # note occurrence in each song
-  note_occurances = sapply(notes, 
+  note_occurences = sapply(notes, 
          function(note) 
            str_count(single_song$Full.note.sequence..unaligned., note))
-  colnames(note_occurances) = notes
+  colnames(note_occurences) = notes
   
   # single_song$sC<-ifelse(single_song$C>0,"C","")
   
@@ -376,5 +388,5 @@ MelodicEvoAnalysis = function(s, name){
   list(mut = s, interval = interval, semitone = semitone, 
        strongweak = strong_weak,
        functional_types = functional_types, song_counts = song_counts,
-       total = total, note_occurances = note_occurances)
+       total = total, note_occurences = note_occurences)
 }
