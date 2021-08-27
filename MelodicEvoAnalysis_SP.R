@@ -37,7 +37,6 @@ MelodicEvoAnalysis = function(s, name){
   s$strongfunction_rate = (s$n_finalmutations + s$n_stressedmutations) / (s$n_final + s$n_stressed)
   s$weakfunction_rate   = (s$n_unstressedmutations + s$n_ornamentalmutations) /
     (s$n_unstressed + s$n_ornamental) 
-
   
   single_song = s[!duplicated(s$PairNo),]
   
@@ -323,6 +322,11 @@ MelodicEvoAnalysis = function(s, name){
   
   print(cor.test(total,mutability,method="spearman",alternative="less"))
   
+  #print descriptive stats for melody length
+  print(mean(s$n_notes))
+  print(median(s$n_notes))
+  print(min(s$n_notes))
+  print(max(s$n_notes))
   
   #####Calculate scale frequencies:
   # extract unique notes/scales
