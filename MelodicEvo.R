@@ -23,6 +23,7 @@ library(sp)
 library(RColorBrewer)
 library(phangorn)
 library(GADMTools)
+library(boot)
 
 # Make directories to store results if they don't exist
 if(!dir.exists("results/")) dir.create("results/")

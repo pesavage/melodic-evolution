@@ -83,6 +83,11 @@ MelodicEvoAnalysis = function(s, name){
                  method="spearman",
                  alternative="less"))
   
+  print(cor.test(interval_substitutions, 
+                 c(2:7), 
+                 method="pearson",
+                 alternative="less"))
+  
   # Graph of Intervals by Substitution count
   jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
   plot(c(2:7),
@@ -101,6 +106,8 @@ MelodicEvoAnalysis = function(s, name){
   
   #grouped by # of semitones
   print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
+  print(cor.test(semitone,c(1:11),method="pearson",alternative="less"))
+  
   
   jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
   plot(c(1:11), 
@@ -194,6 +201,8 @@ MelodicEvoAnalysis = function(s, name){
   
   print(cor.test(strong_weak$PID,
                  ((1 - strong_weak$strongfunction_rate) * 100)- ((1 - strong_weak$weakfunction_rate) * 100)),method="spearman")
+  print(cor.test(strong_weak$PID,
+                 ((1 - strong_weak$strongfunction_rate) * 100)- ((1 - strong_weak$weakfunction_rate) * 100)),method="pearson")
   
    # For all four functional types
   functional_types = aggregate(s[, c("finalmutation_rate", 
