@@ -43,27 +43,55 @@ MelodicEvoAnalysis = function(s, name){
   # Get columns of semitonal distances
   semitonal_columns = str_detect(colnames(single_song), 
                                  "X[0-9]{1,2}\\.semitone\\.substitutions")
-  # Calculate semitonal distances
+  # Calculate semitonal distance frequency
   semitone = colSums(single_song[,semitonal_columns],na.rm=TRUE) 
   
-  # grouped by 2-7 interval size
-  interval = c(sum(semitone[1:2]),
-               sum(semitone[3:4]),
-               sum(semitone[5:6]),
-               sum(semitone[7]),
-               sum(semitone[8:9]),
-               sum(semitone[10:11]))
+  # Calculate semitonal bootstrapped 95% CI intervals
+  sumFunc = function(x,i){sum(x[i], na.rm = TRUE)}
+  bootSum = apply(single_song[,semitonal_columns], 2, 
+                    function(x) boot(x, sumFunc, R = 1000))
+  semitonalsemitonalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
+  semitonalci_df = data.frame(t(semitonalci_df))
+  colnames(semitonalci_df) = c("interval", "low", "high")
   
+  semitonalci_df$semitone = 1:11
+  semitonalci_df$high = semitonalci_df$high + 1
+  
+  # grouped by 2-7 interval size
+  int_df = single_song[,semitonal_columns]
+  interval_df = data.frame(second = rowSums(int_df[,1:2], na.rm = TRUE),
+                           third = rowSums(int_df[,3:4], na.rm = TRUE),
+                           fourth = rowSums(int_df[,5:6], na.rm = TRUE),
+                           fifth = int_df[,7],
+                           sixth = rowSums(int_df[,8:9], na.rm = TRUE),
+                           seventh = rowSums(int_df[,10:11], na.rm = TRUE))
+                           
+  interval_substitutions = colSums(interval_df, na.rm = TRUE)
+  
+  
+  ## Interval bootstrapped 95% CI
+  bootSum = apply(interval_df, 2, 
+                  function(x) boot(x, sumFunc, R = 1000))
+  intervalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
+  intervalci_df = data.frame(t(intervalci_df))
+  colnames(intervalci_df) = c("ci_interval", "low", "high")
+  intervalci_df$interval = 2:7
   
   print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
   
   # Graph of Intervals by Substitution count
   jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
   plot(c(2:7),
-       interval,
+       interval_substitutions,
        pch = 16, xaxt = "n", 
        ylab = "Number of substitutions",
-       xlab = "Substitution distance (intervals)")
+       xlab = "Substitution distance (intervals)",
+       ylim = c(0, max(intervalci_df$high)))
+  arrows(x0 = intervalci_df$interval, y0 = intervalci_df$low, 
+         x1 = intervalci_df$interval, y1 = intervalci_df$high, 
+         length = 0.05, 
+         angle = 90, 
+         code = 3)
   axis(1, at = 2:7, labels = c("2nd", "3rd", "4th", "5th", "6th", "7th"))
   dev.off()
   
@@ -75,7 +103,13 @@ MelodicEvoAnalysis = function(s, name){
        semitone,
        pch = 16, xaxt = "n",
        ylab = "Number of substitutions",
-       xlab = "Substitution distance (semitones)")
+       xlab = "Substitution distance (semitones)",
+       ylim = c(0, max(semitonalci_df$high)))
+  arrows(x0 = semitonalci_df$semitone, y0 = semitonalci_df$low, 
+         x1 = semitonalci_df$semitone, y1 = semitonalci_df$high, 
+         length = 0.05, 
+         angle = 90, 
+         code = 3)
   axis(1, at = 1:11, labels = c("1", "2", "3", "4",
                                 "5", "6", "7", "8",
                                 "9", "10", "11"))
