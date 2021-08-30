@@ -15,7 +15,8 @@ list.of.packages <- c("plotrix",
                       "phangorn",
                       "GADMTools",
                       "BiocManager",
-                      "ggthemes")
+                      "ggthemes",
+                      "boot")
 
 new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 

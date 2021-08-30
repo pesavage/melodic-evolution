@@ -16,6 +16,7 @@ MelodicEvoAnalysis = function(s, name){
   require(tidyr)
   require(ggplot2)
   require(ggthemes)
+  require(boot)
   
   s$n_notes      = str_length(s$Full.note.sequence..unaligned.)
   s$n_ornamental = str_length(s$Ornamental.notes)
@@ -50,7 +51,7 @@ MelodicEvoAnalysis = function(s, name){
   sumFunc = function(x,i){sum(x[i], na.rm = TRUE)}
   bootSum = apply(single_song[,semitonal_columns], 2, 
                     function(x) boot(x, sumFunc, R = 1000))
-  semitonalsemitonalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
+  semitonalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
   semitonalci_df = data.frame(t(semitonalci_df))
   colnames(semitonalci_df) = c("interval", "low", "high")
   
@@ -77,7 +78,10 @@ MelodicEvoAnalysis = function(s, name){
   colnames(intervalci_df) = c("ci_interval", "low", "high")
   intervalci_df$interval = 2:7
   
-  print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
+  print(cor.test(interval_substitutions, 
+                 c(2:7), 
+                 method="spearman",
+                 alternative="less"))
   
   # Graph of Intervals by Substitution count
   jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
@@ -148,7 +152,7 @@ MelodicEvoAnalysis = function(s, name){
                  color = "red", 
                  width = 1, 
                  size = .6) +
-    geom_hline(xintercept = 0.86, colour = "red", linetype = "dashed") + 
+    geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
@@ -236,7 +240,7 @@ MelodicEvoAnalysis = function(s, name){
                  color = "red", 
                  width = 1, 
                  size = .6) +
-    geom_hline(xintercept = 0.86, colour = "red", linetype = "dashed") + 
+    geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
           axis.text.x = element_text(angle = 45, hjust=1),
