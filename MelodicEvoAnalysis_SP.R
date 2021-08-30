@@ -227,7 +227,7 @@ MelodicEvoAnalysis = function(s, name){
                                             "finalmutation_rate"))
   
   p2 = ggplot(violin_df, 
-              aes(x = reorder(MeasureType, Val), 
+              aes(x = MeasureType, 
                   y = Val, 
                   fill = MeasureType)) +
     geom_violin()  + 
@@ -241,6 +241,7 @@ MelodicEvoAnalysis = function(s, name){
                  width = 1, 
                  size = .6) +
     geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
+    theme_base() + 
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
           axis.text.x = element_text(angle = 45, hjust=1),
