@@ -58,7 +58,7 @@ japan = ggplot() +
   theme(legend.title = element_blank())
 
 #### USA ####
-usa_sf <- ne_states(country = "United States of America", returnclass = "sf")
+usa_sf <- ne_states(country = c("United States of America", "Canada"), returnclass = "sf")
 
 usa_sf = left_join(usa_sf, song_frequency, by = c("name" = "NAME_1"))
 
@@ -68,8 +68,8 @@ usa_sf$n_songs[is.na(usa_sf$n_songs)] = 0
 usa = ggplot() + 
   geom_sf(data = usa_sf, aes(fill = n_songs), color = NA) +
   theme_minimal() +
-  coord_sf(crs = st_crs(2163), xlim = c(-2500000, 2500000), 
-           ylim = c(-2300000, 730000)) + 
+  coord_sf(crs = st_crs(2163), xlim = c(-2500000, 3000000), 
+           ylim = c(-2300000, 3000000)) + 
   scale_fill_gradientn(colors = orange_colours) + 
   theme(legend.title = element_blank(), 
         axis.text.x = element_text(angle = 45))
