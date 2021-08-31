@@ -113,8 +113,8 @@ std.error(sens[,2],na.rm=TRUE) #Frequency r SE = 0.07389054
 std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9381823
 
 
-##Map samples
-#source(MelodyMap.R) # (Uncomment this once I've finished tweaking map scripts)
+# Map samples
+system("RScript MelodyMap.R") 
 
 ##### Model data ####
 # First make the dataset - this relies on the above code being run.
