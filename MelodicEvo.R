@@ -7,22 +7,24 @@ if (!requireNamespace("BiocManager", quietly = TRUE)){
 }
   
 #open packages
-library(plotrix)
-library(seqinr)
-library(Biostrings)
-library(seriation)
-library(tidyr)
-library(ggplot2)
-library(dplyr)
-library(varhandle)
-library(stringr)
-library(seqRFLP)
-library(pwr)
-library(lsr)
-library(sp)
-library(RColorBrewer)
-library(phangorn)
-library(GADMTools)
+suppressPackageStartupMessages({
+  library(plotrix)
+  library(seqinr)
+  library(Biostrings)
+  library(seriation)
+  library(tidyr)
+  library(ggplot2)
+  library(dplyr)
+  library(varhandle)
+  library(stringr)
+  library(seqRFLP)
+  library(pwr)
+  library(lsr)
+  library(sp)
+  library(RColorBrewer)
+  library(phangorn)
+  library(GADMTools)
+})
 
 # Make directories to store results if they don't exist
 if(!dir.exists("results/")) dir.create("results/")
@@ -121,6 +123,9 @@ system('RScript substitution_data.R')
 
 # Then build the models. This takes some time. 
 system('RScript substitution_model.R')
+
+#### Tests
+system('RScript test.R')
 
 # Write R version and packages
 # If you are reproducing these results, then please check you have the same 

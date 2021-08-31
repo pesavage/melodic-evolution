@@ -430,7 +430,7 @@ MelodicEvoAnalysis = function(s, name){
   # dev.off()
   
   # Outputs for testing
-  list(mut = s, interval = interval, semitone = semitone, 
+  list(mut = s, interval = interval_substitutions, semitone = semitone, 
        strongweak = strong_weak,
        functional_types = functional_types, song_counts = song_counts,
        total = total, note_occurences = note_occurences)
