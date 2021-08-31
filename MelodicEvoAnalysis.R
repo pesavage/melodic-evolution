@@ -1,269 +1,437 @@
 #### subscript of "MelodicEvo.R"
+source('./helper.R')
 
 #Define function for mean and 95% confidence interval
 data_summary <- function(x) {
-  m <- mean(x)
-  ymin <- m-std.error(x)*1.96
-  ymax <- m+std.error(x)*1.96
-  return(c(y=m,ymin=ymin,ymax=ymax))
+  single_song <- mean(x)
+  ymin <- single_song-std.error(x)*1.96
+  ymax <- single_song+std.error(x)*1.96
+  return(c(y=single_song,ymin=ymin,ymax=ymax))
 }
 
 # Calculate mutation rates for different functional types
 MelodicEvoAnalysis = function(s, name){
-  mut<-s[,c(1,13:20)]
-  mut$nFull<-str_length(mut[,2])
-  mut$nOrn<-str_length(mut[,3])
-  mut$nFin<-str_length(mut[,4])
-  mut$nStr<-str_length(mut[,5])
-  mut$nUnStr<-mut$nFull-rowSums(mut[,11:13])
-  mut$nOrnMut<-str_length(mut[,6])
-  mut$nFinMut<-str_length(mut[,7])
-  mut$nStrMut<-str_length(mut[,8])
-  mut$nUnStrMut<-str_length(mut[,9])
+  require(stringr)
+  require(dplyr)
+  require(tidyr)
+  require(ggplot2)
+  require(ggthemes)
+  require(boot)
   
-  mut$FinMutRate<-mut$nFinMut/mut$nFin
-  mut$StrMutRate<-mut$nStrMut/mut$nStr
-  mut$UnStrRate<-mut$nUnStrMut/mut$nUnStr
-  mut$OrnMutRate<-mut$nOrnMut/mut$nOrn
-  mut$StrongFunctionRate<-(mut$nFinMut+mut$nStrMut)/(mut$nFin+mut$nStr)
-  mut$WeakFunctionRate<-(mut$nUnStrMut+mut$nOrnMut)/(mut$nUnStr+mut$nOrn)
+  s$n_notes      = str_length(s$Full.note.sequence..unaligned.)
+  s$n_ornamental = str_length(s$Ornamental.notes)
+  s$n_final      = str_length(s$Final.note)
+  s$n_stressed   = str_length(s$Stressed.notes)
+  s$n_unstressed = s$n_notes - 
+    rowSums(s[,c("n_ornamental", "n_final", "n_stressed")]) 
   
-  print(sum(mut[,15:18])) #no. of total mutations 
-  print(length(mut$FinMutRate))
-  print(sum(!is.na(mut$OrnMutRate))) #no. of melodies with ornamental notes
-  print(sum(is.na(mut$OrnMutRate))) #no. of melodies without ornamental notes
+  s$n_ornamentalmutations = str_length(s$Ornamental.mutations)
+  s$n_finalmutations      = str_length(s$Final.mutations)
+  s$n_stressedmutations   = str_length(s$Stress.mutations)
+  s$n_unstressedmutations = str_length(s$Unstressed.mutations)
   
-  ####Compare/plot
+  s$finalmutation_rate      = s$n_finalmutations / s$n_final
+  s$stressedmutation_rate   = s$n_stressedmutations / s$n_stressed
+  s$unstressedmutation_rate = s$n_unstressedmutations / s$n_unstressed
+  s$ornamentalmutation_rate = s$n_ornamentalmutations / s$n_ornamental
   
-  #mutational distance 
-  m <- s[!duplicated(mut$PairNo),] #only using one value per pair, since substitution numbers are identical between variant
-  semitone<-colSums(m[,21:31],na.rm=TRUE) 
+  s$strongfunction_rate = (s$n_finalmutations + s$n_stressedmutations) / (s$n_final + s$n_stressed)
+  s$weakfunction_rate   = (s$n_unstressedmutations + s$n_ornamentalmutations) /
+    (s$n_unstressed + s$n_ornamental) 
   
-  #grouped by 2-7 interval size
-  interval<-c(sum(semitone[1:2]),sum(semitone[3:4]),sum(semitone[5:6]),sum(semitone[7]),sum(semitone[8:9]),sum(semitone[10:11]))
-  print(cor.test(interval,c(2:7),method="spearman",alternative="less"))
+  single_song = s[!duplicated(s$PairNo),]
   
+  # Get columns of semitonal distances
+  semitonal_columns = str_detect(colnames(single_song), 
+                                 "X[0-9]{1,2}\\.semitone\\.substitutions")
+  # Calculate semitonal distance frequency
+  semitone = colSums(single_song[,semitonal_columns],na.rm=TRUE) 
+  
+  # Calculate semitonal bootstrapped 95% CI intervals
+  sumFunc = function(x,i){sum(x[i], na.rm = TRUE)}
+  bootSum = apply(single_song[,semitonal_columns], 2, 
+                    function(x) boot(x, sumFunc, R = 1000))
+  semitonalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
+  semitonalci_df = data.frame(t(semitonalci_df))
+  colnames(semitonalci_df) = c("interval", "low", "high")
+  
+  semitonalci_df$semitone = 1:11
+  semitonalci_df$high = semitonalci_df$high + 1
+  
+  # grouped by 2-7 interval size
+  int_df = single_song[,semitonal_columns]
+  interval_df = data.frame(second = rowSums(int_df[,1:2], na.rm = TRUE),
+                           third = rowSums(int_df[,3:4], na.rm = TRUE),
+                           fourth = rowSums(int_df[,5:6], na.rm = TRUE),
+                           fifth = int_df[,7],
+                           sixth = rowSums(int_df[,8:9], na.rm = TRUE),
+                           seventh = rowSums(int_df[,10:11], na.rm = TRUE))
+                           
+  interval_substitutions = colSums(interval_df, na.rm = TRUE)
+  
+  
+  ## Interval bootstrapped 95% CI
+  bootSum = apply(interval_df, 2, 
+                  function(x) boot(x, sumFunc, R = 1000))
+  intervalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
+  intervalci_df = data.frame(t(intervalci_df))
+  colnames(intervalci_df) = c("ci_interval", "low", "high")
+  intervalci_df$interval = 2:7
+  
+  print(cor.test(interval_substitutions, 
+                 c(2:7), 
+                 method="spearman",
+                 alternative="less"))
+  
+  # Graph of Intervals by Substitution count
   jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
-  plot(c(2:7),log10(interval),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
-  axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
-  axis(1, at=2:7, labels=c("2nd","3rd","4th","5th","6th","7th"))
+  plot(c(2:7),
+       interval_substitutions,
+       pch = 16, xaxt = "n", 
+       ylab = "Number of substitutions",
+       xlab = "Substitution distance (intervals)",
+       ylim = c(0, max(intervalci_df$high)))
+  arrows(x0 = intervalci_df$interval, y0 = intervalci_df$low, 
+         x1 = intervalci_df$interval, y1 = intervalci_df$high, 
+         length = 0.05, 
+         angle = 90, 
+         code = 3)
+  axis(1, at = 2:7, labels = c("2nd", "3rd", "4th", "5th", "6th", "7th"))
   dev.off()
   
   #grouped by # of semitones
   print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
   
   jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
-  plot(c(1:11),log10(semitone),ylim=c(0,3),pch=16,xaxt="n",yaxt="n",ylab="Number of substitutions (log scale)",xlab="Substitution distance")
-  axis(2, at=c(0,1,2,3), labels=c(1,10,100,1000))
-  axis(1, at=1:11, labels=c("1(m2nd)","2(M2nd)","3(m3rd)","4(M3rd)","5(P5th)","6(A4/D5)", "7(P5th)","8(m6th)", "9(M6th)","10(m7th)", "11(M7th)"))
+  plot(c(1:11), 
+       semitone,
+       pch = 16, xaxt = "n",
+       ylab = "Number of substitutions",
+       xlab = "Substitution distance (semitones)",
+       ylim = c(0, max(semitonalci_df$high)))
+  arrows(x0 = semitonalci_df$semitone, y0 = semitonalci_df$low, 
+         x1 = semitonalci_df$semitone, y1 = semitonalci_df$high, 
+         length = 0.05, 
+         angle = 90, 
+         code = 3)
+  axis(1, at = 1:11, labels = c("1", "2", "3", "4",
+                                "5", "6", "7", "8",
+                                "9", "10", "11"))
   dev.off()
-  
-  #Function
-  #Strong vs. weak
-  data_wide <- mut[ , c(23:24,1)]
-  
-  #Average rates for each pair
-  out <- matrix(NA, nrow=0, ncol=3)
-  for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
-    rates<-colMeans(data_wide[(i*2-1):(i*2),],na.rm=TRUE)
-    out <- rbind(out,rates)
-  }
-  data_wide<-as.data.frame(out)
-  
-  #Check sample sizes
-  length(data_wide$StrongFunctionRate) #no. of pairs
 
+  #### Function ####
+  #Strong vs. weak
+  strong_weak = aggregate(s[, c("PairNo", "strongfunction_rate", 
+                              "weakfunction_rate","PID")], 
+                   by = list(PairNo = s$PairNo),
+                   FUN = mean)
+
+  #Check sample sizes
+  length(strong_weak$strongfunction_rate) #no. of pairs
+  
   #Make violin plot
-  
+  strong_weak<-strong_weak[,c("PairNo","strongfunction_rate", "weakfunction_rate","PID")]
   #plot
-  violin_df = data_wide[,1:2] %>% 
-          gather(key="MeasureType", value="Val")
+  violin_df = strong_weak %>% 
+    dplyr::select(strongfunction_rate, weakfunction_rate) %>% 
+    gather(key="MeasureType", value="Val") %>% 
+    mutate(Val = (1 - Val) * 100)
   
-  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"))
-  ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-          geom_violin() +
-          stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
-          geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
-          ylim(0,0.4) + 
-          theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
+  
+  p1 = ggplot(violin_df, 
+         aes(x = reorder(MeasureType, Val), 
+             y = Val, 
+             fill = MeasureType)) +
+    geom_violin()  + 
+    geom_jitter(binaxis = 'y', 
+                stackdir = 'center', 
+                size = 1,
+                position = position_jitter(0.3)) + 
+    stat_summary(fun.data = data_summary, 
+                 geom = "pointrange", 
+                 color = "red", 
+                 width = 1, 
+                 size = .6) +
+    geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
+    theme_base() + 
+    theme(axis.text = element_text(size = 14),
+          axis.title = element_text(size = 18, face = "bold"),
+          axis.text.x = element_text(angle = 45, hjust=1),
+          legend.position = "none") +
+    xlab("") + 
+    ylab("Stability (% identity)") + 
+    scale_x_discrete(labels = c("strongfunction_rate" = "Strong Function", 
+                                "weakfunction_rate" = "Weak Function")) + 
+    scale_y_continuous(labels=function(x) paste0(x,"%")) 
+  
+  
+  ggsave(filename = 
+           paste0("figures/Function_byevolutionaryrate", name, "_1.jpeg"), plot = p1)
+  
+  #### t-tests ####
+  ## paired t-test
+  print(t.test(strong_weak$weakfunction_rate,
+               strong_weak$strongfunction_rate,
+               alternative = "greater",
+               paired = TRUE))
+  print(cohensD( x = strong_weak$weakfunction_rate, y = strong_weak$strongfunction_rate, method = "paired"))
+  
+  # unpaired t-test
+  print(t.test(strong_weak$strongfunction_rate,
+               strong_weak$weakfunction_rate,
+               alternative = "greater",
+               paired=FALSE)) 
+  
+ #Plot difference between strong vs. weak function as function of PID
+  jpeg(paste0("figures/FunctionalDifferenceVsPID_", name, ".jpeg"))
+  plot(strong_weak$PID,
+       ((1 - strong_weak$strongfunction_rate) * 100)- ((1 - strong_weak$weakfunction_rate) * 100),
+       pch = 16, 
+       ylab = "Strong function % identity - weaker function % identity",
+       xlab = "Overall % identity")
+  
   dev.off()
   
-  #t tests
-  print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE)) #paired t-test
-  print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=FALSE)) #unpaired t-test
+  print(cor.test(strong_weak$PID,
+                 ((1 - strong_weak$strongfunction_rate) * 100)- ((1 - strong_weak$weakfunction_rate) * 100)),method="spearman")
   
-  
-  #For all four functional types
-  data_wide <- mut[ , c(19:22,1)]
-  
-  #Average rates for each pair
-  out <- matrix(NA, nrow=0, ncol=5)
-  for(i in 1:length(mut[!duplicated(mut$PairNo),]$PairNo)){
-    rates<-colMeans(data_wide[(i*2-1):(i*2),],na.rm=TRUE)
-    out <- rbind(out,rates)
-  }
-  data_wide<-as.data.frame(out)
+   # For all four functional types
+  functional_types = aggregate(s[, c("finalmutation_rate", 
+                              "stressedmutation_rate",
+                              "unstressedmutation_rate", 
+                              "ornamentalmutation_rate",
+                              "PairNo")], 
+                        by = list(PairNo = s$PairNo),
+                        FUN = mean)
   
   #Check sample sizes
-  length(data_wide$FinMutRate) #no. of pairs
-  sum(!is.na(data_wide$OrnMutRate)) #no. of pairs with ornamental notes
-  sum(is.na(data_wide$OrnMutRate)) #no. of pairs without ornamental notes
-  
+  length(functional_types$FinMutRate) #no. of pairs
+  sum(!is.na(functional_types$OrnMutRate)) #no. of pairs with ornamental notes
+  sum(is.na(functional_types$OrnMutRate)) #no. of pairs without ornamental notes
+  functional_types<-functional_types[,c("finalmutation_rate",                             
+                                        "stressedmutation_rate",
+                                        "unstressedmutation_rate", 
+                                        "ornamentalmutation_rate",
+                                        "PairNo")]
   #Make violin plot
-  violin_df = data_wide[,1:4] %>% 
-          gather(key="MeasureType", value="Val") 
+  violin_df = functional_types %>% 
+    select(finalmutation_rate, stressedmutation_rate,
+           unstressedmutation_rate, ornamentalmutation_rate) %>% 
+    gather(key="MeasureType", value="Val") %>% 
+    mutate(Val = (1 - Val) * 100)
   
-  jpeg(paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"))
-  ggplot(violin_df, aes(x=reorder(MeasureType, Val), y=Val, fill=MeasureType)) +
-          geom_violin() + 
-          stat_summary(fun.data=data_summary, geom="pointrange",color="red",width=1,size=.6) + 
-          geom_jitter(binaxis='y', stackdir='center', size=1,position=position_jitter(0.3)) + 
-          ylim(0,1) + 
-          theme(axis.text=element_text(size=21),axis.title=element_text(size=23,face="bold"))
-  dev.off()
+  violin_df$MeasureType = factor(violin_df$MeasureType, 
+                                 levels = c("ornamentalmutation_rate",
+                                            "unstressedmutation_rate",
+                                            "stressedmutation_rate",
+                                            "finalmutation_rate"))
   
-  #t-tests
-  print(t.test(data_wide[,4],data_wide[,3],alternative="greater",paired=TRUE))
-  print(t.test(data_wide[,3],data_wide[,2],alternative="greater",paired=TRUE))
-  print(t.test(data_wide[,2],data_wide[,1],alternative="greater",paired=TRUE))
-  colMeans(data_wide,na.rm=TRUE)
-  length(subset(data_wide, FinMutRate>0)$FinMutRate) #number of pairs with final mutations
+  p2 = ggplot(violin_df, 
+              aes(x = MeasureType, 
+                  y = Val, 
+                  fill = MeasureType)) +
+    geom_violin()  + 
+    geom_jitter(binaxis = 'y', 
+                stackdir = 'center', 
+                size = 1,
+                position = position_jitter(0.3)) + 
+    stat_summary(fun.data = data_summary, 
+                 geom = "pointrange", 
+                 color = "red", 
+                 width = 1, 
+                 size = .6) +
+    geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
+    theme_base() + 
+    theme(axis.text = element_text(size = 14),
+          axis.title = element_text(size = 18, face = "bold"),
+          axis.text.x = element_text(angle = 45, hjust=1),
+          legend.position = "none") +
+    xlab("") + 
+    ylab("Stability (% melodic identity)") + 
+    scale_x_discrete(labels = c("unstressedmutation_rate" = "Unstressed",
+                                "stressedmutation_rate" = "Stressed", 
+                                "finalmutation_rate" = "Final",
+                                "ornamentalmutation_rate" = "Ornamental")) +
+    scale_y_continuous(labels=function(x) paste0(x,"%"))
   
-  ####Substitution matrix:
-  indel<-colSums(m[,32:43],na.rm=TRUE) 
-  sum(indel) #total no. of indels
-  sub<-colSums(m[,44:109],na.rm=TRUE) 
-  sum(sub) #total no. of substitutions
+  ggsave(filename = 
+           paste0("figures/Function_byevolutionaryrate", name, "_2.jpeg"), plot = p2)
+  
+  ### Functional t-tests ####
+  print(t.test(functional_types$ornamentalmutation_rate,
+               functional_types$unstressedmutation_rate,
+               alternative = "greater", 
+               paired = TRUE))
+  
+  print(t.test(functional_types$unstressedmutation_rate,
+               functional_types$stressedmutation_rate,
+               alternative = "greater",
+               paired = TRUE))
+  
+  print(t.test(functional_types$stressedmutation_rate,
+               functional_types$finalmutation_rate,
+               alternative = "greater", 
+               paired = TRUE))
+  
+  colMeans(functional_types, na.rm = TRUE)
+  #number of pairs with final mutations
+  length(
+    subset(functional_types, finalmutation_rate > 0)$finalmutation_rate
+    ) 
+  
+  #### Substitution matrix ####
+  # Get all columns representing a deletion in the form of a letter 
+  # followed by a .
+  indel_columns = str_detect(colnames(single_song), "^[A-Za-z]{1}\\.$")
+  indel = colSums(single_song[,indel_columns],na.rm=TRUE) 
+  sum(indel) # total no. of indels
+  
+  # Get all substition columns, in the form of two letters
+  sub_columns = str_detect(colnames(single_song), "^[A-Za-z]{2}$")
+  sub = colSums(single_song[,sub_columns],na.rm=TRUE) 
+  sum(sub) # total no. of substitutions
   
   ###The following section creates a substitution matrix in which the diagonal represents the number of times a given note appears unchanged in both melodies from a highly related pair, while the other cells represent the sum of all substitutions involving each possible pair of notes. The diagonal is calculated by subtracting the sum of all substitutions and indels from the total number of times a given note appears.
-  n<-"C"
-  Cn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"d"
-  dn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"D"
-  Dn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"e"
-  en<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"E"
-  En<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"F"
-  Fn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"g"
-  gn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"G"
-  Gn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"a"
-  an<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"A"
-  An<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"b"
-  bn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
-  n<-"B"
-  Bn<-sum(str_count(m[,13], n))-(sum(c(str_count(m[,17], n),str_count(m[,18], n),str_count(m[,19], n),str_count(m[,20], n))))
+  notes = c("C", "d",	"D",	"e",	"E",	"F",	"g",
+            "G",	"a",	"A",	"b",	"B")
   
-  mat<-cbind(c(0,indel),c(NA,Cn,sub[1:11]),c(rep(NA,2),dn,sub[12:21]),c(rep(NA,3),Dn,sub[22:30]),c(rep(NA,4),en,sub[31:38]),c(rep(NA,5),En,sub[39:45]),c(rep(NA,6),Fn,sub[46:51]),c(rep(NA,7),gn,sub[52:56]),c(rep(NA,8),Gn,sub[57:60]),c(rep(NA,9),an,sub[61:63]),c(rep(NA,10),An,sub[64:65]),c(rep(NA,11),bn,sub[66]),c(rep(NA,12),Bn))
-  rownames(mat)<-c("-","C","d","D","e","E","F","g","G","a","A","b","B")
-  colnames(mat)<-c("-","C","d","D","e","E","F","g","G","a","A","b","B")
+  song_counts = 
+    sapply(notes, function(n) {
+      total = sum(str_count(single_song$Full.note.sequence..unaligned., n))
+      ornamental_mutations = sum(str_count(single_song$Ornamental.mutations, n))
+      final_mutations = sum(str_count(single_song$Final.mutations, n))
+      stress_mutations = sum(str_count(single_song$Stress.mutations, n))
+      unstressed_mutations = sum(str_count(single_song$Unstressed.mutations, n))
+      # Total - all mutations gives the note count
+      total - (ornamental_mutations + final_mutations + stress_mutations + unstressed_mutations)
+    })
   
-  #calculate mutability
-  full.mat<-as.matrix(as.dist(as.matrix(mat)))
-  sub.mat<-full.mat[2:13,2:13] #exclude substitutions from matrix calculations
-  unchanged<-c(mat[2,2],mat[3,3],mat[4,4],mat[5,5],mat[6,6],mat[7,7],mat[8,8],mat[9,9],mat[10,10],mat[11,11],mat[12,12],mat[13,13])
-  changed<-colSums(full.mat)[2:13] 
-  total<-changed+unchanged
+  mat = matrix(NA, 
+               ncol = length(notes), 
+               nrow = length(notes),
+               dimnames = list(notes, notes))
+  
+  mat[lower.tri(mat)] = sub
+  diag(mat) = song_counts
+  # Add deletions
+  mat_indel = rbind(rep(NA, ncol(mat)), mat)
+  mat_indel = cbind(c(0, indel), mat_indel)
+  mat_indel[upper.tri(mat_indel)] = t(mat_indel)[upper.tri(mat_indel)]
+  
+  #### Calculate Mutability ####
+  mat[upper.tri(mat)] = t(mat)[upper.tri(mat)]
+
+  changed = colSums(mat_indel[,2:ncol(mat_indel)]) - song_counts
+  
+  total = changed + song_counts
   print("CHANGED")
   print(changed)
   print("MUTABILITY")
-  (mutability<-changed/total)
+  (mutability = changed / total)
   
-  print(mutability)
   write.csv(mutability, paste0("results/", name, "_mutability.csv"))
   write.csv(total, paste0("results/", name, "_notecounts.csv"))
   
-  mat<-rbind(mat,c(NA,mutability))
+  mat = rbind(mat, c(NA, mutability))
   write.csv(mat,
             paste0("results/", name, "_SubstitutionMatrix.csv")
-            )
+  )
   
   #Test correlation between note frequency and mutability
   jpeg(paste0("figures/Frequency_byMutability", name, ".jpeg"))
-  plot(log10(total),log10(mutability),pch=16,ylim=c(log10(.1),log10(1)),xlim=c(log10(1),log10(10000)),xaxt="n",yaxt="n",ylab="Mutability",xlab="Note frequency")
-  text(log10(total),log10(mutability), names(total), cex=1.5, pos=2, col="red")
-  axis(2, at=c(log10(1),log10(.5),log10(.2),log10(.1)), labels=c(1,.5,.2,.1))
-  axis(1, at=c(log10(1),log10(10),log10(100),log10(1000),log10(10000)), labels=c(1,10,100,1000,10000))
+  plot(log10(total),
+       log10(mutability),
+       pch = 16,
+       ylim = c(log10(.1), log10(1)),
+       xlim = c(log10(1), log10(10000)), 
+       xaxt = "n", yaxt = "n", 
+       ylab = "Mutability",
+       xlab = "Note frequency")
+  text(log10(total), 
+       log10(mutability), 
+       names(total), 
+       cex = 1.5, 
+       pos = 2, 
+       col = "red")
+  axis(2, 
+       at = c(log10(1), log10(.5), log10(.2), log10(.1)), 
+       labels = c(1, .5, .2, .1))
+  axis(1, 
+       at = c(log10(1), log10(10), log10(100), log10(1000), log10(10000)), 
+       labels = c(1, 10, 100, 1000, 10000))
   dev.off()
   
   print(cor.test(total,mutability,method="spearman",alternative="less"))
   
+  #print descriptive stats for melody length
+  print(mean(s$n_notes))
+  print(median(s$n_notes))
+  print(min(s$n_notes))
+  print(max(s$n_notes))
   
   #####Calculate scale frequencies:
-  #extract unique notes/scales
-  m$C<-str_count(m[,13], "C")
-  m$d<-str_count(m[,13], "d")
-  m$D<-str_count(m[,13], "D")
-  m$e<-str_count(m[,13], "e")
-  m$E<-str_count(m[,13], "E")
-  m$F<-str_count(m[,13], "F")
-  m$g<-str_count(m[,13], "g")
-  m$G<-str_count(m[,13], "G")
-  m$a<-str_count(m[,13], "a")
-  m$A<-str_count(m[,13], "A")
-  m$b<-str_count(m[,13], "b")
-  m$B<-str_count(m[,13], "B")
-  m$sC<-ifelse(m$C>0,"C","")
+  # extract unique notes/scales
+  # note occurrence in each song
+  note_occurences = sapply(notes, 
+         function(note) 
+           str_count(single_song$Full.note.sequence..unaligned., note))
+  colnames(note_occurences) = notes
   
-  for(i in 1:length(m$C)){
-    m[i,123]<-ifelse(m[i,111]==0,m[i,122],paste0(c(m[i,122],"d"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,124]<-ifelse(m[i,112]==0,m[i,123],paste0(c(m[i,123],"D"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,125]<-ifelse(m[i,113]==0,m[i,124],paste0(c(m[i,124],"e"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,126]<-ifelse(m[i,114]==0,m[i,125],paste0(c(m[i,125],"E"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,127]<-ifelse(m[i,115]==0,m[i,126],paste0(c(m[i,126],"F"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,128]<-ifelse(m[i,116]==0,m[i,127],paste0(c(m[i,127],"g"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,129]<-ifelse(m[i,117]==0,m[i,128],paste0(c(m[i,128],"G"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,130]<-ifelse(m[i,118]==0,m[i,129],paste0(c(m[i,129],"a"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,131]<-ifelse(m[i,119]==0,m[i,130],paste0(c(m[i,130],"A"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,132]<-ifelse(m[i,120]==0,m[i,131],paste0(c(m[i,131],"b"),collapse = ""))
-  }
-  for(i in 1:length(m$C)){
-    m[i,133]<-ifelse(m[i,121]==0,m[i,132],paste0(c(m[i,132],"B"),collapse = ""))
-  }
-  names(m)[133] <- "scale"
-  m$scaleNum<-str_length(m$scale)
+  # single_song$sC<-ifelse(single_song$C>0,"C","")
   
-  jpeg(paste0("figures/Frequency_ofScale", name, ".jpeg"))
-  barplot(table(m$scaleNum))
-  dev.off()
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,123]<-ifelse(single_song[i,111]==0,single_song[i,122],paste0(c(single_song[i,122],"d"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,124]<-ifelse(single_song[i,112]==0,single_song[i,123],paste0(c(single_song[i,123],"D"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,125]<-ifelse(single_song[i,113]==0,single_song[i,124],paste0(c(single_song[i,124],"e"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,126]<-ifelse(single_song[i,114]==0,single_song[i,125],paste0(c(single_song[i,125],"E"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,127]<-ifelse(single_song[i,115]==0,single_song[i,126],paste0(c(single_song[i,126],"F"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,128]<-ifelse(single_song[i,116]==0,single_song[i,127],paste0(c(single_song[i,127],"g"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,129]<-ifelse(single_song[i,117]==0,single_song[i,128],paste0(c(single_song[i,128],"G"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,130]<-ifelse(single_song[i,118]==0,single_song[i,129],paste0(c(single_song[i,129],"a"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,131]<-ifelse(single_song[i,119]==0,single_song[i,130],paste0(c(single_song[i,130],"A"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,132]<-ifelse(single_song[i,120]==0,single_song[i,131],paste0(c(single_song[i,131],"b"),collapse = ""))
+  # }
+  # for(i in 1:length(single_song$C)){
+  #   single_song[i,133]<-ifelse(single_song[i,121]==0,single_song[i,132],paste0(c(single_song[i,132],"B"),collapse = ""))
+  # }
+  # names(single_song)[133] <- "scale"
+  # single_song$scaleNum<-str_length(single_song$scale)
   
-  #barplot of scales ordered by frequency
-  scale<-as.data.frame(
-    sort(
-      table(m$scale), decreasing = TRUE
-      )
-    )
-  jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
-  barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7, main = name)
-  dev.off()
+  # jpeg(paste0("figures/Frequency_ofScale", name, ".jpeg"))
+  # barplot(table(single_song$scaleNum))
+  # dev.off()
+  # 
+  # # barplot of scales ordered by frequency
+  # scale = as.data.frame(
+  #   sort(
+  #     table(single_song$scale), decreasing = TRUE
+  #   )
+  # )
+  # jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
+  # barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7, main = name)
+  # dev.off()
   
-  # Return objects for testing
-  list(mut = mut, interval = interval, semitone, strongweak = strong_weak,
-       functional_types = data_wide, song_counts = diag(mat)[2:ncol(mat)],
-       total = total, note_occurances = note_occurances)
+  # Outputs for testing
+  list(mut = s, interval = interval_substitutions, semitone = semitone, 
+       strongweak = strong_weak,
+       functional_types = functional_types, song_counts = song_counts,
+       total = total, note_occurences = note_occurences)
 }

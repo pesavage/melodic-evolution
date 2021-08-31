@@ -1,8 +1,27 @@
 ## Tests
 library(testthat)
 
-# source("MelodicEvoAnalysis.R")
-source("MelodicEvoAnalysis_SP.R")
+# For analysis
+suppressPackageStartupMessages({
+  library(plotrix)
+  library(seqinr)
+  library(Biostrings)
+  library(seriation)
+  library(tidyr)
+  library(ggplot2)
+  library(dplyr)
+  library(varhandle)
+  library(stringr)
+  library(seqRFLP)
+  library(pwr)
+  library(lsr)
+  library(sp)
+  library(RColorBrewer)
+  library(phangorn)
+  library(GADMTools)
+})
+
+source("MelodicEvoAnalysis.R")
 
 full = read.csv("MelodicEvoSeq.csv", header=TRUE, row.names=1)
 d    = subset(full, PairNo>0)  #Restrict to only highly related pairs
@@ -26,7 +45,7 @@ testthat::test_that("Mutation counts & Rates check", {
 
 # Intervals and Semitones check
 testthat::test_that("Interval & Semitones check", {
-  expect_equal(e$interval, c(326, 203, 73, 22, 13, 2))
+  expect_equal(unname(e$interval), c(326, 203, 73, 22, 13, 2))
   expect_equal(unname(e$semitone), c(70, 256, 135, 68, 73, 0, 22, 6 ,7 ,2, 0))
 })
 

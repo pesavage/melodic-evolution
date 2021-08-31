@@ -7,23 +7,24 @@ if (!requireNamespace("BiocManager", quietly = TRUE)){
 }
   
 #open packages
-library(plotrix)
-library(seqinr)
-library(Biostrings)
-library(seriation)
-library(tidyr)
-library(ggplot2)
-library(dplyr)
-library(varhandle)
-library(stringr)
-library(seqRFLP)
-library(pwr)
-library(lsr)
-library(sp)
-library(RColorBrewer)
-library(phangorn)
-library(GADMTools)
-library(boot)
+suppressPackageStartupMessages({
+  library(plotrix)
+  library(seqinr)
+  library(Biostrings)
+  library(seriation)
+  library(tidyr)
+  library(ggplot2)
+  library(dplyr)
+  library(varhandle)
+  library(stringr)
+  library(seqRFLP)
+  library(pwr)
+  library(lsr)
+  library(sp)
+  library(RColorBrewer)
+  library(phangorn)
+  library(GADMTools)
+})
 
 # Make directories to store results if they don't exist
 if(!dir.exists("results/")) dir.create("results/")
@@ -40,7 +41,7 @@ full<-read.csv("MelodicEvoSeq.csv", header=TRUE, row.names=1)
 d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 
 ## Source analysis function
-source("MelodicEvoAnalysis_SP.R")
+source("MelodicEvoAnalysis.R")
 
 ##### Calculate mutation rates for different functional types ####
 # Full English subset
@@ -112,16 +113,19 @@ std.error(sens[,2],na.rm=TRUE) #Frequency r SE = 0.07389054
 std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9381823
 
 
-##Map samples
-#source(MelodyMap.R) #(Uncomment this once I've finished tweaking map scripts)
+# Map samples
+system("RScript MelodyMap.R") 
 
 ##### Model data ####
 # First make the dataset - this relies on the above code being run.
 # This also creates the model figure
-source('substitution_data.R')
+system('RScript substitution_data.R')
 
 # Then build the models. This takes some time. 
-source('substitution_model.R')
+system('RScript substitution_model.R')
+
+#### Tests
+system('RScript test.R')
 
 # Write R version and packages
 # If you are reproducing these results, then please check you have the same 

@@ -1,265 +1,228 @@
+# This script creates the data for the model in substitution_models.R from
+# the raw data file used to align songs
+
 library(readxl)
+library(stringr)
 library(dplyr)
-library(ggplot2)
+library(assertthat)
 
 source('helper.R')
 
-## Data needs these columns:
-# Total = Frequency of note change (bidirectional)
-# DistanceSemitone = Semitone distance
-# NoteTotal1 = Frequency of the first note in a pair
-# NoteTotal2 = Frequency  of the second note in a pair
-# MinTotal = Minimum of NoteTotal1 and NoteTotal2
-
-english_substitutionmatrix = read.csv('results/english_SubstitutionMatrix.csv', 
-                               row.names = 1, nrows = 13) # last row is mutability 
-english_output = get_substitutions(english_substitutionmatrix)
-
-japanese_substitutionmatrix = read.csv('results/japanese_SubstitutionMatrix.csv', 
-                                       row.names = 1, nrows = 13) # last row is mutability 
-japanese_output = get_substitutions(japanese_substitutionmatrix)
-
-## Combine English & Japanese
-substitutions_long = rbind(english_output$substitutions, japanese_output$substitutions)
-substitutions_long$society = rep(c("English", "Japanese"), each = nrow(english_output$substitutions))
-
-## Total note counts
-english_count = read.csv('results/english_notecounts.csv')
-colnames(english_count) = c("note", "count")
-english_count$society = "English"
-
-japanese_count = read.csv('results/japanese_notecounts.csv')
-colnames(japanese_count) = c("note", "count")
-japanese_count$society = "Japanese"
-
-counts = rbind(english_count, japanese_count)
-
-# Load and Format semi-tonal data
-semitonal_distance = read_xlsx("SubstitutionSize_distancematrices.xlsx", 
-                               sheet = "Semitone distance matrix") %>%
-  as.matrix()
-
-semitonal_distance = semitonal_distance[,2:ncol(semitonal_distance)]
-semitonal_distance = apply(semitonal_distance, 2, as.numeric)
-rownames(semitonal_distance) = colnames(semitonal_distance)
-
-semitonal_distance[upper.tri(semitonal_distance)] = 
-  t(semitonal_distance)[upper.tri(semitonal_distance)]
-
-semitonal_long = data.frame(col=colnames(semitonal_distance)[col(semitonal_distance)], 
-                            row=rownames(semitonal_distance)[row(semitonal_distance)], 
-                            semitonal_distance=c(semitonal_distance))
-
-# Join datasets 
-model_df = left_join(substitutions_long, semitonal_long, by = c("row", "col"))
-model_df = model_df %>% filter(col != "-") %>% filter(row != "-")
-
-# Add frequency
-model_df = left_join(model_df, counts, by = c("col" = "note", "society" = "society")) 
-model_df = left_join(model_df, counts, by = c("row" = "note", "society" = "society"))
-
-colnames(model_df) = c("note1", "note2", "mutation_count", "society",
-                       "semitonal_distance", "count_1", "count_2")
-
-model_df$minimum_count = apply(model_df[,c("count_1", "count_2")], 1, min)
-
-model_df = model_df[model_df$note1 != model_df$note2,]
-
-# remove notes that don't occur
-idx = model_df$count_1 == 0 | model_df$count_2 == 0
-model_df = model_df[!idx,]
-
-# Make semi-tonal adjustments based on manual calculations
-new_semitones = read_xlsx('data/SubstitutionMatrices.xlsx', 
-                          sheet = "Large intervals")
-
-# Remove 16 semitone distances (unjustifiable outlier)
-new_semitones = new_semitones[new_semitones$semitone_distance < 16,]
-
-for(i in 1:nrow(new_semitones)){
-  row = new_semitones[i,]
-  existingrow_idx = which(row$Note1 == model_df$note1 & row$Note2 == model_df$note2)
-  existing_row = model_df[existingrow_idx,]
+get_data = function(df){
+  # Coding columns
+  # Columns 111 to 245 contain information on:
+  # Substitution changes between notes; 
+  # the semitonal distance of that change; 
+  # whether that change was a strong functional change or weak functional 
+  # However, it does not give information on near semitonal distance
+  # and weak functional change. We calculate this from existing data. 
+  coding_idx = 111:245
   
-  # reduce mutation_count
-  existing_row$mutation_count[existing_row$society == "Japanese"] = 
-    existing_row$mutation_count[existing_row$society == "Japanese"] - row$ja_substitutions
-  existing_row$mutation_count[existing_row$society == "English"] = 
-    existing_row$mutation_count[existing_row$society == "English"] - row$eng_substitutions
+  notes = c("C", "d",	"D",	"e",	"E",	"F",	"g",
+            "G",	"a",	"A",	"b",	"B")
   
-  # create new row 
-  new_row = existing_row
-  new_row$mutation_count[new_row$society == "Japanese"] = row$ja_substitutions
-  new_row$mutation_count[new_row$society == "English"] = row$eng_substitutions
-  new_row$semitonal_distance[new_row$society == "Japanese"] = row$semitone_distance
-  new_row$semitonal_distance[new_row$society == "English"] = row$semitone_distance
+  #### Substitutions ####
+  # Extract information on notes, function, and distance from titles
+  parsed_titles = sapply(colnames(df)[coding_idx], function(c) 
+    unlist(
+      str_match_all(c, "(^[A-Za-z]{1})([A-Za-z]{1})([0-9]{1,2})([w|s]$)"
+      )))
   
-  # put data back
-  model_df[existingrow_idx,] = existing_row
-  model_df = rbind(model_df, new_row)
+  # Occurances 
+  occurances = colSums(df[,coding_idx], na.rm = TRUE)
+  
+  # Make into a single data frame
+  model_matrix = cbind(t(parsed_titles), occurances)
+  model_matrix = as.data.frame(model_matrix)
+  colnames(model_matrix) = c("ID", "note1", "note2", "semitonal_distance", "functional_change", "substitution_count")
+  
+  model_matrix$substitution_count = as.numeric(model_matrix$substitution_count)
+  model_matrix$semitonal_distance = as.numeric(model_matrix$semitonal_distance)
+  
+  assert_that(all(table(model_matrix$ID) == 1))
+  
+  # Not all far strong pairs are in the dataframe. We add them here.
+  farweak_names = model_matrix$ID[model_matrix$semitonal_distance >= 6 & model_matrix$functional_change == "w"]
+  farstrong_names = str_replace(farweak_names, "w", "s")
+  
+  assert_that(length(farstrong_names) == 66)
+  
+  farstrong_missing = farstrong_names[!farstrong_names %in% model_matrix$ID]
+  farstrong_settings = sapply(farstrong_missing, function(c) 
+    unlist(
+      str_match_all(c, "(^[A-Za-z]{1})([A-Za-z]{1})([0-9]{1,2})([w|s]$)"
+      )))
+  
+  farstrong = cbind(t(farstrong_settings), 0)
+  farstrong = as.data.frame(farstrong)
+  colnames(farstrong) = colnames(model_matrix)
+  
+  
+  farstrong$substitution_count = as.numeric(farstrong$substitution_count)
+  farstrong$semitonal_distance = as.numeric(farstrong$semitonal_distance)
+  
+  ## add to main data
+  model_matrix = rbind(model_matrix, farstrong)
+  
+  assert_that(all(table(model_matrix$ID) == 1))
+  
+  # Near weak counts are: 
+  # total_counts - far & weak counts - near & strong - far & strong
+  # But we need to calculate them from existing other data
+  # nearweak_names = 
+  #   str_extract(model_matrix$ID, "^[A-Za-z]{2}[0-6]s") %>% 
+  #   unique() %>% 
+  #   na.omit %>% 
+  #   str_replace_all(., "s", "w")
+  
+  # Columns titled with two note letter codes only, indicate total substitution counts
+  # i.e. not subset by function type of semitonal distance. 
+  totalsubstitution_idx = str_detect(colnames(df), "^[A-Za-z]{2}$")
+  total_counts = colSums(df[,totalsubstitution_idx], na.rm = TRUE)
+  
+  # We calculate the subtotal for all other types fro model_matrix to create
+  # a subtotal
+  st = model_matrix %>% 
+    group_by(note1, note2) %>% 
+    summarise(subtotal = sum(substitution_count))
+  
+  subtotal = st$subtotal
+  names(subtotal) = paste0(st$note1, st$note2)
+  
+  # Reorder notes to be the same as total_counts
+  subtotal = subtotal[names(total_counts)]
+  
+  near_weak = total_counts - subtotal
+  
+  assert_that(all(near_weak >= 0))
+  
+  nearstrong_idx = str_detect(colnames(df), "[A-Za-z]{2}[0-6]s")
+  nearstrong_names = colnames(df)[nearstrong_idx]
+  nearweak_names = str_replace(nearstrong_names, "s", "w")
+  
+  nearweak_df = do.call("rbind",
+                        str_match_all(nearweak_names, "(^[A-Za-z]{1})([A-Za-z]{1})([0-9]{1,2})([w|s]$)"
+                        ))
+  
+  nearweak_df = as.data.frame(nearweak_df)
+  colnames(nearweak_df) = c("ID", "note1", "note2", "semitonal_distance", "functional_change")
+  nearweak_df$substitution_count = near_weak
+  
+  # Some notes have the same near and far distance (6 semitones up & down).
+  # We only count these once. 
+  nearweak_df = nearweak_df[!nearweak_df$ID %in% c("Cg6w", "Da6w", "eA6w", 
+                                                   "Eb6w", "FB6w"),]
+  
+  model_matrix = rbind(model_matrix, nearweak_df)
+  
+  # All note ids should occur once
+  assert_that(all(table(model_matrix$ID) == 1))
+  
+  #### Total counts #### 
+  # The baseline model is the product of note occurrences. 
+  # We need a count of note occurrences. 
+  # Note counts are determined by counting the number of times notes occur
+  # in one of the song pairs + insertions between the songs
+  # song_counts = 
+  #   sapply(notes, function(n)
+  #     sum(
+  #       str_count(df$Full.note.sequence..unaligned., n)
+  #     ))
+  
+  song_counts = 
+    sapply(notes, function(n) {
+      total = sum(str_count(df$Full.note.sequence..unaligned., n))
+      ornamental_mutations = sum(str_count(df$Ornamental.mutations, n))
+      final_mutations = sum(str_count(df$Final.mutations, n))
+      stress_mutations = sum(str_count(df$Stress.mutations, n))
+      unstressed_mutations = sum(str_count(df$Unstressed.mutations, n))
+      # Total - all mutations gives the note count
+      total - (ornamental_mutations + final_mutations + stress_mutations + unstressed_mutations)
+    })
+  
+  insertion_cols = str_detect(colnames(df), "^[A-Za-z]{1}\\.$")
+  insertion_counts = colSums(df[,insertion_cols], na.rm = TRUE)
+  
+  note_totals = song_counts + insertion_counts
+  
+  note_frequencies = note_totals / sum(note_totals)
+  notefrequencies_df = data.frame(note = names(note_frequencies), 
+                                  value = note_frequencies)
+  
+  ## Add to the dataframe
+  model_matrix = left_join(model_matrix, 
+                           notefrequencies_df, by = c("note1" = "note")) %>% 
+    left_join(., notefrequencies_df, by = c("note2" = "note"))
+  
+  
+  model_matrix = 
+    rename(model_matrix, frequency1 = value.x, frequency2 = value.y)
+  
+  # Functional totals
+  # We divide the count of a substitution by the frequency of a particular type
+  # To ensure that we are not only finding effects due to a difference in 
+  # base-rate of types. 
+  
+  total_notes = sum(
+    sapply(df$Full.note.sequence..unaligned., nchar), 
+    na.rm = TRUE)
+  
+  ornamental_notes = sum(
+    sapply(df$Ornamental.notes, nchar), 
+    na.rm = TRUE)
+  
+  final_notes = sum(
+    sapply(df$Final.note, nchar), 
+    na.rm = TRUE)
+  
+  stressed_notes = sum(
+    sapply(df$Stressed.notes, nchar), 
+    na.rm = TRUE)
+  
+  unstressed_notes = total_notes - ornamental_notes - final_notes - stressed_notes
+  
+  strong_function = final_notes + stressed_notes
+  weak_function   = ornamental_notes + unstressed_notes
+  
+  typetotal_df = data.frame(functional_change = c("w", "s"), 
+                            functional_total = c(weak_function, strong_function))
+  
+  # dividing by two accounts for the fact that one substitution 
+  # involves two melodies
+  typetotal_df$functional_total = typetotal_df$functional_total / 2
+  
+  model_matrix = left_join(model_matrix, typetotal_df, by = "functional_change")
+
 }
 
-functional_substitutions = read_xlsx('data/SubstitutionMatrices.xlsx', 
-                                sheet = "Functional intervals")
+## Run function
+raw_data = read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+raw_data = raw_data[!duplicated(raw_data$PairNo),]
 
-# remove 16 semitonal distance 
-functional_substitutions = functional_substitutions[functional_substitutions$semitone_distance < 16,]
+english_raw  = raw_data[raw_data$Language == "English",]
+japanese_raw = raw_data[raw_data$Language == "Japanese",]
 
-model_df$functional_change = "NF-NF"
+english_modeldata  = get_data(english_raw)
+japanese_modeldata = get_data(japanese_raw)
 
-for(i in 1:nrow(functional_substitutions)){
-  row = functional_substitutions[i,]
-  
-  existingrow_idx = which(row$Note1 == model_df$note1 & 
-                            row$Note2 == model_df$note2 & 
-                            row$semitone_distance == model_df$semitonal_distance &
-                            model_df$functional_change == "NF-NF")
-  existing_row = model_df[existingrow_idx,]
-  
-  # Change old substitutions
-  # reduce mutation_count
-  row_jmatch = existing_row$society == "Japanese" 
-  row_ematch = existing_row$society == "English"
-  existing_row$mutation_count[row_jmatch] = 
-    existing_row$mutation_count[row_jmatch] - row$ja_substitutions
-  existing_row$mutation_count[row_ematch] = 
-    existing_row$mutation_count[row_ematch] - row$eng_substitutions
-  
-  
-  
-  # new row for F-F changes
-  new_row = existing_row
-  new_row$mutation_count[new_row$society == "Japanese"] = row$ja_substitutions
-  new_row$mutation_count[new_row$society == "English"] = row$eng_substitutions
-  new_row$semitonal_distance[new_row$society == "Japanese"] = row$semitone_distance
-  new_row$semitonal_distance[new_row$society == "English"] = row$semitone_distance
-  
-  new_row$functional_change = ifelse(row$functional_notes == 1, "F-F", "F-NF")
-  
-  # Put rows back
-  model_df[existingrow_idx,] = existing_row
-  model_df = rbind(model_df, new_row)
-  
-  if(any(existing_row$mutation_count < 0)) stop("STOP")
-}
+model_data = rbind(english_modeldata, japanese_modeldata)
+model_data$society = rep(c("English", "Japanese"), 
+                         each = nrow(english_modeldata))
 
+# We should not have any semitonal distances below 16
+assert_that(!any(model_data$semitonal_distance == 16))
 
-assertthat::assert_that(nrow(model_df[model_df$note1 == "C" &
-                                        model_df$note2 == "D" &
-                                        model_df$semitonal_distance == 2 & 
-                                        model_df$society == "English",]) == 3)
+# Each soceity should occur 264 times
+assert_that(all(table(model_data$society) == 264))
 
-assertthat::assert_that(all(model_df$mutation_count[model_df$note1 == "C" &
-                                                  model_df$note2 == "D" &
-                                                  model_df$semitonal_distance == 2 & 
-                                                  model_df$society == "English"] == c(55, 2, 3)))
+# There are 66 note pairs for the 8 different categories:
+# 1) English & Japanese societies, 
+# 2) Close and far semitone distances, 
+# 3) Strong and weak functional notes
+# 5 note pairs only have one semitonal distance (6 semitones), because 
+# the note pair has the same distance up and down the scale. Which occur 
+# twice in each society, four times total
+assert_that(nrow(model_data) == (66 * 8) - 4 * 5)
 
-## Total notes in each society 
-total_notes = data.frame(society = c("English", "Japanese"),
-                         total_notes = c(sum(english_count$count), sum(japanese_count$count)),
-                         total_substitutions = tapply(model_df$mutation_count, model_df$society, sum))
-
-model_df = left_join(model_df, total_notes, "society")
-
-
-# total notes by function
-function_total = data.frame(
-  society = c(rep("English", 3), rep("Japanese", 3)),
-  functional_change = rep(c("NF-NF", "F-F", "F-NF"), 2),
-  functional_total = c(
-    16240 + 16240, 5039 + 5039, 5039 + 16240,
-    7424 + 7424, 2406 + 2406, 2406 + 7424
-  )
-)
-
-model_df = left_join(model_df, function_total, 
-                     by = c("society", "functional_change"))
-
-model_df = model_df[model_df$functional_change != "F-NF",]
-model_df$functionalchange_bin = ifelse(model_df$functional_change == "NF-NF", 0, 1)
-model_df$functional_total = model_df$functional_total / 2
-
-write.csv(model_df, "results/reviewer_wonf_f_modeldata.csv",
-          row.names = FALSE, fileEncoding = 'utf-8')
-
-# Make main figure
-model_df$functional_change = ifelse(model_df$functional_change == "NF-NF", "Weaker function",
-                                    "Strong function")
-model_df$functionalchange_bin = ifelse(model_df$functional_change == "NF-NF", 0, 1)
-
-plot_1 = ggplot(model_df, aes(y = mutation_count, 
-                       x = count_1 * count_2, size = semitonal_distance)) +
-  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x) + 
-  geom_point(shape = 21, aes(fill = functional_change), alpha = 0.8) +
-  ylab("Number of Subsitutions") + 
-  xlab("Note 1 count x Note 2 count") +
-  facet_wrap(~society, scales = "free") + 
-  scale_x_continuous(labels = scales::comma) +
-  theme(legend.position = c(0.12, 0.94), legend.title = element_blank(),
-        legend.background=element_rect(fill = alpha("white", 0.0)),
-        text = element_text(size=14)) +
-  scale_size_continuous(guide = "none") +
-  ggtitle("Substitutions against count interaction", "English and Japanese songs")
-
-ggsave(filename = 'figures/model_plot.png', plot = plot_1)
-
-
-# With model response
-
-
-plot_2 = ggplot(model_df, aes(y = mutation_count / functional_total, 
-                              x = count_1 * count_2, size = semitonal_distance)) +
-  geom_smooth(method='lm', se = FALSE, formula = y ~ 0 + x, col = "#6DA0FD") + 
-  geom_point(shape = 21, aes(fill = functional_change), alpha = 0.8) +
-  ylab("Number of Subsitutions") + 
-  xlab("Note 1 count x Note 2 count") +
-  facet_wrap(~society, scales = "free_x") + 
-  scale_x_continuous(labels = scales::comma) +
-  theme(legend.position="bottom", legend.title = element_blank(),
-        legend.background=element_rect(fill = alpha("white", 0.0)),
-        text = element_text(size=14)) +
-  guides(size = guide_legend(override.aes = list(linetype = 0)))  +
-  ggtitle("Substitutions against count interaction", "English and Japanese songs")
-
-# annotate
-ann_text1 <- data.frame(mutation_count = 55,
-                       functional_total = 16240,
-                       count_1 = 2669 + 490,
-                       count_2 = 1501,
-                       semitonal_distance = 2,
-                       society = "English",
-                       lab = "C-D \n 2 Semitones")
-
-ann_text2 <- data.frame(mutation_count = 23,
-                        functional_total = 7424,
-                        count_1 = 1144 + 175,
-                        count_2 = 876,
-                        semitonal_distance = 2,
-                        society = "Japanese",
-                        lab = "C-D \n 2 Semitones")
-
-ann_text3 <- data.frame(mutation_count = 1,
-                        functional_total = 7274,
-                        count_1 = 1144 + 175,
-                        count_2 = 876,
-                        semitonal_distance = 10,
-                        society = "Japanese",
-                        lab = "D-C \n 10 Semitones")
-
-ann_text4 <- data.frame(mutation_count = 0,
-                        functional_total = 16240,
-                        count_1 = 2669 + 490,
-                        count_2 = 1501,
-                        semitonal_distance = 10,
-                        society = "English",
-                        lab = "D-C \n 10 Semitones")
-
-plot_2 = plot_2 + 
-  geom_label(data = ann_text1, label = ann_text1$lab, show.legend = FALSE, size = 2, col = "#F13C2C") + 
-  geom_label(data = ann_text2, label = ann_text2$lab, show.legend = FALSE, size = 2, col = "#F13C2C") +
-  geom_label(data = ann_text3, label = ann_text3$lab, show.legend = FALSE, size = 2, col = "#F13C2C") +
-  geom_label(data = ann_text4, label = ann_text3$lab, show.legend = FALSE, size = 2, col = "#F13C2C")  
-
-plot_2
-ggsave(filename = 'figures/dividedresponse_plot.png', plot = plot_2)
+write.csv(model_data, 'results/model_data.csv')
 
