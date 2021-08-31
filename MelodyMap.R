@@ -1,121 +1,84 @@
-##### import library #####
+## This script create a map of the data. 
+
+library(ggplot2)
 library(dplyr)
-library(GADMTools)
+library(sf) 
+library(rnaturalearth) 
+library(patchwork)
 
+#### Data ####
+data = read.csv('MelodicEvoSeq.csv')
 
-##### load dataset #####
-full<-read.csv("https://raw.githubusercontent.com/pesavage/melodic-evolution/master/MelodicEvoSeq.csv",header=TRUE,row.names=1) #Import all 10,000+ sequences
-s <- d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
+song_frequency = data %>%
+  filter(!is.na(NAME_1)) %>%
+  group_by(NAME_1) %>% 
+  summarise(n_songs = n())
 
-map <- as.data.frame(table(full$NAME_1))
-map <- rename(map, NAME_1 = Var1)
-attach(map)
-map <- map[order(-Freq),]
-detach(map)
-barplot(map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
-write.csv(map,"MapSampleNos.csv")
-map <- read.csv("MapSampleNos.csv",row.names=1)
+orange_colours = c("#FFF5EB", "#FEE6CE", "#FDD0A2", "#FDAE6B", 
+                   "#FD8D3C", "#F16913", "#D94801", "#A63603",
+                   "#7F2704")
 
-sub.map <- as.data.frame(table(d$NAME_1))
-sub.map <- rename(sub.map, NAME_1 = Var1)
-attach(sub.map)
-sub.map <- sub.map[order(-Freq),]
-detach(sub.map)
-barplot(sub.map$Freq,las=2,names.arg=map$Var1, cex.names=.7)
-write.csv(sub.map,"SubMapSampleNos.csv")
-sub.map <- read.csv("SubMapSampleNos.csv",row.names=1)
+#### United Kingdom + Ireland ####
+uk_sf <- ne_states(country = c("united kingdom", "ireland"), 
+                   returnclass = "sf")
 
+# If the administrator is Ireland, the geonunit is Ireland
+uk_sf$geonunit[uk_sf$admin == "Ireland"] = "Ireland"
 
-##### Figure of Japan (Single country) #####
+uk_sf = left_join(uk_sf, song_frequency, by = c("geonunit" = "NAME_1"))
 
-BASEFILE <- "./GADM"
-BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
-ja <- gadm_sp.loadCountries("JPN", level = 1, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
+# We have no songs from Wales, 
+# but indicate count as 0 rather than missing
+uk_sf$n_songs[uk_sf$geonunit == "Wales"] = 0 
 
-jards<-full.jards<-readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_JPN_1_sp.rds")) 
-jards@data <- merge(jards@data, map, by="NAME_1", all.x=TRUE)
-jards@data$Freq[is.na(jards@data$Freq)] <- 0
-jadat <- data.frame(NAME_1=jards@data$NAME_1, Freq=jards@data$Freq)
+hist(uk_sf$n_songs)
+uk_sf$nsongs_discrete = cut(uk_sf$n_songs, 5)
 
-choropleth(ja, jadat, adm.join = "NAME_1",
-               value = "Freq",
-               breaks = "sd",
-               palette="Oranges",
-               legend = "Number of melodies",
-               title="Number of melodies per region")
+uk_ireland = ggplot() + 
+  geom_sf(data = uk_sf, aes(fill = n_songs), color = NA) +
+  theme_minimal() +
+  scale_fill_gradientn(colors = orange_colours) + 
+  theme(legend.title = element_blank())
 
+#### Japan ####
+japan_sf <- ne_states(country = "japan", 
+                   returnclass = "sf")
 
-##### Figure of US & Canada (Multiple countries) #####
-BASEFILE <- "./GADM"
-BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
-usacan <- gadm_sp.loadCountries(c("USA", "CAN"), level = 1, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
+japan_sf = left_join(japan_sf, song_frequency, by = c("name" = "NAME_1"))
 
-usrds <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_USA_1_sp.rds")) 
-usrds@data <- merge(usrds@data, map, by="NAME_1", all.x=TRUE)
-usrds@data$Freq[is.na(usrds@data$Freq)] <- 0
-usdat <- data.frame(NAME_1=usrds@data$NAME_1, Freq=usrds@data$Freq)
+# Code areas with no songs as 0 rather than missing
+japan_sf$n_songs[is.na(japan_sf$n_songs)] = 0
 
-cards <- readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_CAN_1_sp.rds")) 
-cards@data <- merge(cards@data, map, by="NAME_1", all.x=TRUE)
-cards@data$Freq[is.na(cards@data$Freq)] <- 0
-cadat <- data.frame(NAME_1=cards@data$NAME_1, Freq=cards@data$Freq)
+japan = ggplot() + 
+  geom_sf(data = japan_sf, aes(fill = n_songs), color = NA) +
+  theme_minimal() +
+  xlim(c(127, 150)) + 
+  ylim(c(30, 46)) + 
+  scale_fill_gradientn(colors = orange_colours) + 
+  theme(legend.title = element_blank())
 
-uscadat <- rbind(usdat, cadat)
+#### USA ####
+usa_sf <- ne_states(country = c("United States of America", "Canada"), returnclass = "sf")
 
-choropleth(usacan, uscadat, adm.join = "NAME_1",
-               value = "Freq",
-               breaks = "sd",
-               palette="Oranges",
-               legend = "Number of melodies",
-               title="Number of melodies per region")
+usa_sf = left_join(usa_sf, song_frequency, by = c("name" = "NAME_1"))
 
-##### Figure of UK (Single country) #####
-BASEFILE <- "./GADM"
-BASEURL <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/"
-uk <- gadm_sp.loadCountries("GBR", level = 1, basefile=BASEFILE, baseurl=BASEURL, simplify=0.02)
+# Code areas with no songs as 0 rather than missing
+usa_sf$n_songs[is.na(usa_sf$n_songs)] = 0
 
-ukrds<-readRDS(url("https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_GBR_1_sp.rds")) 
-ukrds@data <- merge(ukrds@data, map, by="NAME_1", all.x=TRUE)
-ukrds@data$Freq[is.na(ukrds@data$Freq)] <- 0
-ukdat <- data.frame(NAME_1=ukrds@data$NAME_1, Freq=ukrds@data$Freq)
+usa = ggplot() + 
+  geom_sf(data = usa_sf, aes(fill = n_songs), color = NA) +
+  theme_minimal() +
+  coord_sf(crs = st_crs(2163), xlim = c(-2500000, 3000000), 
+           ylim = c(-2300000, 3000000)) + 
+  scale_fill_gradientn(colors = orange_colours) + 
+  theme(legend.title = element_blank(), 
+        axis.text.x = element_text(angle = 45))
 
-choropleth(uk, ukdat, adm.join = "NAME_1",
-           value = "Freq",
-           breaks = "sd",
-           palette="Oranges",
-           legend = "Number of melodies",
-           title="Number of melodies per region")
+ggsave(filename = 'figures/ukireland_map.jpeg', plot = uk_ireland)
+ggsave(filename = 'figures/japan_map.jpeg', plot = japan)
+ggsave(filename = 'figures/usa_map.jpeg', plot = usa)
 
-##Map highly related melodies only
+group_plot = (uk_ireland / usa) | japan + 
+  plot_annotation(theme = theme(plot.margin = margin()))
 
-#Japan
-sub.jadat <- merge(jadat, sub.map, by="NAME_1", all.x=TRUE)
-sub.jadat$Freq.y[is.na(sub.jadat$Freq.y)] <- 0
-
-choropleth(ja, sub.jadat, adm.join = "NAME_1",
-           value = "Freq.y",
-           breaks = "sd",
-           palette="Oranges",
-           legend = "Number of melodies",
-           title="Number of melodies per region")
-
-#US + Canada
-sub.uscadat <- merge(uscadat, sub.map, by="NAME_1", all.x=TRUE)
-sub.uscadat$Freq.y[is.na(sub.uscadat$Freq.y)] <- 0
-
-choropleth(usacan, sub.uscadat, adm.join = "NAME_1",
-           value = "Freq.y",
-           breaks = "sd",
-           palette="Oranges",
-           legend = "Number of melodies",
-           title="Number of melodies per region")
-
-#UK
-sub.ukdat <- merge(ukdat, sub.map, by="NAME_1", all.x=TRUE)
-sub.ukdat$Freq.y[is.na(sub.ukdat$Freq.y)] <- 0
-choropleth(uk, sub.ukdat, adm.join = "NAME_1",
-           value = "Freq.y",
-           breaks = "sd",
-           palette="Oranges",
-           legend = "Number of melodies",
-           title="Number of melodies per region")
+ggsave(filename = 'figures/group_map.jpeg', plot = group_plot)

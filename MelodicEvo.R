@@ -39,7 +39,7 @@ full<-read.csv("MelodicEvoSeq.csv", header=TRUE, row.names=1)
 d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 
 ## Source analysis function
-source("MelodicEvoAnalysis_SP.R")
+source("MelodicEvoAnalysis.R")
 
 ##### Calculate mutation rates for different functional types ####
 # Full English subset
@@ -117,10 +117,10 @@ std.error(sens[,3],na.rm=TRUE) #Function t SE =  0.9381823
 ##### Model data ####
 # First make the dataset - this relies on the above code being run.
 # This also creates the model figure
-source('substitution_data.R')
+system('RScript substitution_data.R')
 
 # Then build the models. This takes some time. 
-source('substitution_model.R')
+system('RScript substitution_model.R')
 
 # Write R version and packages
 # If you are reproducing these results, then please check you have the same 
