@@ -196,7 +196,7 @@ get_data = function(df){
 }
 
 ## Run function
-raw_data = read_xlsx("MelodicEvoSeq_SP.xlsx", .name_repair = "universal")
+raw_data = read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
 raw_data = raw_data[!duplicated(raw_data$PairNo),]
 
 english_raw  = raw_data[raw_data$Language == "English",]
@@ -208,7 +208,6 @@ japanese_modeldata = get_data(japanese_raw)
 model_data = rbind(english_modeldata, japanese_modeldata)
 model_data$society = rep(c("English", "Japanese"), 
                          each = nrow(english_modeldata))
-
 
 # We should not have any semitonal distances below 16
 assert_that(!any(model_data$semitonal_distance == 16))
