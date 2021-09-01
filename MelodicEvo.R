@@ -3,9 +3,10 @@ source("install.R")
 #If Biostrings is already installed you can comment out the following three lines of code: 
 if (!requireNamespace("BiocManager", quietly = TRUE)){
   install.packages("BiocManager")
-  BiocManager::install("Biostrings") #If not yet installed, follow installation instructions 
+  BiocManager::install("Biostrings") 
+  # If not yet installed, follow installation instructions 
 }
-  
+
 #open packages
 suppressPackageStartupMessages({
   library(plotrix)

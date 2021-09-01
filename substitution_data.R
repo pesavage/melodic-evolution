@@ -123,11 +123,6 @@ get_data = function(df){
   # We need a count of note occurrences. 
   # Note counts are determined by counting the number of times notes occur
   # in one of the song pairs + insertions between the songs
-  # song_counts = 
-  #   sapply(notes, function(n)
-  #     sum(
-  #       str_count(df$Full.note.sequence..unaligned., n)
-  #     ))
   
   song_counts = 
     sapply(notes, function(n) {
