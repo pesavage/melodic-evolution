@@ -125,6 +125,7 @@ system('RScript substitution_data.R')
 # Then build the models. This takes some time. 
 system('RScript english_models.R')
 system('RScript japanese_models.R')
+# system('RScript model_table.R')
 
 #### Tests
 system('RScript test.R')

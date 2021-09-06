@@ -205,6 +205,8 @@ get_data = function(df){
   model_matrix$frequency2 = 
     model_matrix$frequency2 / 
     max(model_matrix[,c("frequency1", "frequency2")])
+  
+  model_matrix$functionaltotal_normal = model_matrix$functional_total
   model_matrix$functional_total = 
     model_matrix$functional_total / max(model_matrix$functional_total)
   

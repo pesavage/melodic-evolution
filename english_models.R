@@ -93,7 +93,7 @@ fit.4.2 <-
 fit.4.3 <-
   brm(data = english_df, family = poisson,
       substitution_count ~ functional_change + 
-        frequency1:frequency2:functional_total,
+        frequency1:frequency2:functional_total + (1|notepair),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
@@ -106,7 +106,7 @@ fit.5 <-
   brm(data = english_df, family = poisson,
       substitution_count ~ functional_change + 
         semitonal_distance + 
-        frequency1:frequency2:functional_total,
+        frequency1:frequency2:functional_total + (1|notepair),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
@@ -119,7 +119,7 @@ fit.6 <-
   brm(data = english_df, family = poisson,
       substitution_count ~ functional_change * 
         semitonal_distance + 
-        frequency1:frequency2:functional_total,
+        frequency1:frequency2:functional_total + (1|notepair),
       seed = 10, iter = 6000, warmup = 3000, chains = 2, cores = 2,
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),

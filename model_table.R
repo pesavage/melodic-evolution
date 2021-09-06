@@ -85,14 +85,14 @@ english_results$Model = factor(c("Function",
                                  "Note frequency",
                                  "Baseline: Note Function & Frequency",
                                  "Null",
-                                 "Functional model - strong",
-                                 "Functional model - weak"),
+                                 "Distance model - strong function only",
+                                 "Distance model - weak function only"),
                                levels = 
                                  c("Null",
                                    "Note frequency",
                                    "Baseline: Note Function & Frequency",
-                                   "Functional model - strong",
-                                   "Functional model - weak",
+                                   "Distance model - strong function only",
+                                   "Distance model - weak function only",
                                    "Function", 
                                    "Function + Distance",
                                    "Function * Distance"
@@ -107,14 +107,14 @@ japanese_results$Model = factor(c("Function",
                                  "Note frequency",
                                  "Baseline: Note Function & Frequency",
                                  "Null",
-                                 "Functional model - strong",
-                                 "Functional model - weak"),
+                                 "Distance model - strong function only",
+                                 "Distance model - weak function only"),
                                levels = 
                                  c("Null",
                                    "Note frequency",
                                    "Baseline: Note Function & Frequency",
-                                   "Functional model - strong",
-                                   "Functional model - weak",
+                                   "Distance model - strong function only",
+                                   "Distance model - weak function only",
                                    "Function", 
                                    "Function + Distance",
                                    "Function * Distance"
@@ -126,4 +126,6 @@ result_table = rbind(english_results, japanese_results)
 result_table = result_table %>% 
   relocate(Model, Sample, .before = N)
 
-write.csv(result_table, 'results/modeloutput_table.csv')
+write.csv(result_table, 
+          'results/modeloutput_table.csv', 
+          row.names = FALSE)
