@@ -1,10 +1,12 @@
 # This script creates the data for the model in substitution_models.R from
 # the raw data file used to align songs
 
-library(readxl)
-library(stringr)
-library(dplyr)
-library(assertthat)
+suppressPackageStartupMessages({
+  library(readxl)
+  library(stringr)
+  library(dplyr)
+  library(assertthat)
+})
 
 source('helper.R')
 
@@ -21,6 +23,8 @@ get_data = function(df){
   notes = c("C", "d",	"D",	"e",	"E",	"F",	"g",
             "G",	"a",	"A",	"b",	"B")
   
+  single_song = df[!duplicated(df$PairNo),]
+  
   #### Substitutions ####
   # Extract information on notes, function, and distance from titles
   parsed_titles = sapply(colnames(df)[coding_idx], function(c) 
@@ -29,7 +33,7 @@ get_data = function(df){
       )))
   
   # Occurances 
-  occurances = colSums(df[,coding_idx], na.rm = TRUE)
+  occurances = colSums(single_song[,coding_idx], na.rm = TRUE)
   
   # Make into a single data frame
   model_matrix = cbind(t(parsed_titles), occurances)
@@ -77,8 +81,8 @@ get_data = function(df){
   
   # Columns titled with two note letter codes only, indicate total substitution counts
   # i.e. not subset by function type of semitonal distance. 
-  totalsubstitution_idx = str_detect(colnames(df), "^[A-Za-z]{2}$")
-  total_counts = colSums(df[,totalsubstitution_idx], na.rm = TRUE)
+  totalsubstitution_idx = str_detect(colnames(single_song), "^[A-Za-z]{2}$")
+  total_counts = colSums(single_song[,totalsubstitution_idx], na.rm = TRUE)
   
   # We calculate the subtotal for all other types fro model_matrix to create
   # a subtotal
@@ -110,8 +114,9 @@ get_data = function(df){
   
   # Some notes have the same near and far distance (6 semitones up & down).
   # We only count these once. 
-  nearweak_df = nearweak_df[!nearweak_df$ID %in% c("Cg6w", "Da6w", "eA6w", 
-                                                   "Eb6w", "FB6w"),]
+  nearweak_df = nearweak_df[!nearweak_df$ID %in% 
+                              c("Cg6w", "Da6w", "eA6w", 
+                                "Eb6w", "FB6w", "dG6w"),]
   
   model_matrix = rbind(model_matrix, nearweak_df)
   
@@ -126,11 +131,16 @@ get_data = function(df){
   
   song_counts = 
     sapply(notes, function(n) {
-      total = sum(str_count(df$Full.note.sequence..unaligned., n))
-      ornamental_mutations = sum(str_count(df$Ornamental.mutations, n))
-      final_mutations = sum(str_count(df$Final.mutations, n))
-      stress_mutations = sum(str_count(df$Stress.mutations, n))
-      unstressed_mutations = sum(str_count(df$Unstressed.mutations, n))
+      total = sum(str_count(df$Full.note.sequence..unaligned., n),
+                  na.rm = TRUE)
+      ornamental_mutations = sum(str_count(df$Ornamental.mutations, n),
+                                 na.rm = TRUE)
+      final_mutations = sum(str_count(df$Final.mutations, n),
+                            na.rm = TRUE)
+      stress_mutations = sum(str_count(df$Stress.mutations, n),
+                             na.rm = TRUE)
+      unstressed_mutations = sum(str_count(df$Unstressed.mutations, n),
+                                 na.rm = TRUE)
       # Total - all mutations gives the note count
       total - (ornamental_mutations + final_mutations + stress_mutations + unstressed_mutations)
     })
@@ -140,14 +150,13 @@ get_data = function(df){
   
   note_totals = song_counts + insertion_counts
   
-  note_frequencies = note_totals / sum(note_totals)
-  notefrequencies_df = data.frame(note = names(note_frequencies), 
-                                  value = note_frequencies)
+  notecounts_df = data.frame(note = names(note_totals), 
+                                  value = note_totals)
   
   ## Add to the dataframe
   model_matrix = left_join(model_matrix, 
-                           notefrequencies_df, by = c("note1" = "note")) %>% 
-    left_join(., notefrequencies_df, by = c("note2" = "note"))
+                           notecounts_df, by = c("note1" = "note")) %>% 
+    left_join(., notecounts_df, by = c("note2" = "note"))
   
   
   model_matrix = 
@@ -182,17 +191,28 @@ get_data = function(df){
   typetotal_df = data.frame(functional_change = c("w", "s"), 
                             functional_total = c(weak_function, strong_function))
   
-  # dividing by two accounts for the fact that one substitution 
-  # involves two melodies
-  typetotal_df$functional_total = typetotal_df$functional_total / 2
+  # # dividing by two accounts for the fact that one substitution 
+  # # involves two melodies
+  # typetotal_df$functional_total = typetotal_df$functional_total / 2
   
   model_matrix = left_join(model_matrix, typetotal_df, by = "functional_change")
-
+  
+  
+  ## Standardization
+  model_matrix$frequency1 = 
+    model_matrix$frequency1 / 
+    max(model_matrix[,c("frequency1", "frequency2")])
+  model_matrix$frequency2 = 
+    model_matrix$frequency2 / 
+    max(model_matrix[,c("frequency1", "frequency2")])
+  model_matrix$functional_total = 
+    model_matrix$functional_total / max(model_matrix$functional_total)
+  
+  model_matrix
 }
 
 ## Run function
 raw_data = read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
-raw_data = raw_data[!duplicated(raw_data$PairNo),]
 
 english_raw  = raw_data[raw_data$Language == "English",]
 japanese_raw = raw_data[raw_data$Language == "Japanese",]
@@ -204,20 +224,21 @@ model_data = rbind(english_modeldata, japanese_modeldata)
 model_data$society = rep(c("English", "Japanese"), 
                          each = nrow(english_modeldata))
 
+model_data$notepair = paste0(model_data$note1, model_data$note2)
+
 # We should not have any semitonal distances below 16
 assert_that(!any(model_data$semitonal_distance == 16))
 
-# Each soceity should occur 264 times
-assert_that(all(table(model_data$society) == 264))
+# Each society should occur 264 times
+assert_that(all(table(model_data$society) == 252))
 
 # There are 66 note pairs for the 8 different categories:
 # 1) English & Japanese societies, 
 # 2) Close and far semitone distances, 
 # 3) Strong and weak functional notes
-# 5 note pairs only have one semitonal distance (6 semitones), because 
+# 6 note pairs only have one semitonal distance (6 semitones), because 
 # the note pair has the same distance up and down the scale. Which occur 
 # twice in each society, four times total
-assert_that(nrow(model_data) == (66 * 8) - 4 * 5)
+assert_that(nrow(model_data) == (66 * 8) - 4 * 6)
 
-write.csv(model_data, 'results/model_data.csv')
-
+write.csv(model_data, 'data/model_data.csv')

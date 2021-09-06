@@ -123,7 +123,8 @@ system("RScript MelodyMap.R")
 system('RScript substitution_data.R')
 
 # Then build the models. This takes some time. 
-system('RScript substitution_model.R')
+system('RScript english_models.R')
+system('RScript japanese_models.R')
 
 #### Tests
 system('RScript test.R')
