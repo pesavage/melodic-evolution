@@ -51,7 +51,7 @@ MelodicEvoAnalysis = function(s, name){
   sumFunc = function(x,i){sum(x[i], na.rm = TRUE)}
   bootSum = apply(single_song[,semitonal_columns], 2, 
                     function(x) {
-                    boot(x, sumFunc, R = 1000, weights = w)
+                    boot(x, sumFunc, R = 1000)
                     })
   semitonalci_df = sapply(bootSum, function(b) boot.ci(b, type = "norm")$normal)
   semitonalci_df = data.frame(t(semitonalci_df))
