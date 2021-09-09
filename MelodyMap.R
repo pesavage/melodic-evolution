@@ -38,7 +38,10 @@ uk_ireland = ggplot() +
   geom_sf(data = uk_sf, aes(fill = n_songs), color = NA) +
   theme_minimal() +
   scale_fill_gradientn(colors = orange_colours) + 
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank(),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
 
 #### Japan ####
 japan_sf <- ne_states(country = "japan", 
@@ -55,7 +58,10 @@ japan = ggplot() +
   xlim(c(127, 150)) + 
   ylim(c(30, 46)) + 
   scale_fill_gradientn(colors = orange_colours) + 
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank(),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
 
 #### USA ####
 usa_sf <- ne_states(country = c("United States of America", "Canada"), returnclass = "sf")
@@ -71,8 +77,10 @@ usa = ggplot() +
   coord_sf(crs = st_crs(2163), xlim = c(-2500000, 3000000), 
            ylim = c(-2300000, 3000000)) + 
   scale_fill_gradientn(colors = orange_colours) + 
-  theme(legend.title = element_blank(), 
-        axis.text.x = element_text(angle = 45))
+  theme(legend.title = element_blank(),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank())
 
 ggsave(filename = 'figures/ukireland_map.jpeg', plot = uk_ireland)
 ggsave(filename = 'figures/japan_map.jpeg', plot = japan)

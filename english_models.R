@@ -114,6 +114,9 @@ fit.5 <-
 fit.5 = add_criterion(fit.5, "loo", moment_match = TRUE,
                       file = "results/functionplusdistance_english")
 
+bayes_R2(fit.5)
+exp(fixef(fit.5))
+
 #### Function * Distance ####
 fit.6 <-
   brm(data = english_df, family = poisson,
