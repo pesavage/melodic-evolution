@@ -334,6 +334,8 @@ MelodicEvoAnalysis = function(s, name){
 
   changed = colSums(mat_indel[,2:ncol(mat_indel)]) - song_counts
   
+  print(colSums(mat_indel[,2:ncol(mat_indel)]))
+  
   total = changed + song_counts
   print("CHANGED")
   print(changed)
