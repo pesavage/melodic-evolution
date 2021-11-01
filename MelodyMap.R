@@ -1,14 +1,19 @@
 ## This script create a map of the data. 
 
-library(ggplot2)
-library(dplyr)
-library(sf) 
-library(rnaturalearth) 
-library(patchwork)
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(dplyr)
+  library(sf) 
+  library(rnaturalearth) 
+  library(patchwork)
+  library(readxl)
+})
 
 #### Data ####
-data = read.csv('MelodicEvoSeq.csv')
-
+data = suppressMessages(
+  read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+)
+  
 song_frequency = data %>%
   filter(!is.na(NAME_1)) %>%
   group_by(NAME_1) %>% 
@@ -82,11 +87,17 @@ usa = ggplot() +
         axis.text=element_blank(),
         axis.ticks=element_blank())
 
+cat("Saving Maps...\n")
+cat("UK..\n")
 ggsave(filename = 'figures/ukireland_map.jpeg', plot = uk_ireland)
+
+cat("Japan..\n")
 ggsave(filename = 'figures/japan_map.jpeg', plot = japan)
+
+cat("USA..\n")
 ggsave(filename = 'figures/usa_map.jpeg', plot = usa)
 
+cat("Aggregate..\n")
 group_plot = (uk_ireland / usa) | japan + 
   plot_annotation(theme = theme(plot.margin = margin()))
-
 ggsave(filename = 'figures/group_map.jpeg', plot = group_plot)

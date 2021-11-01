@@ -91,7 +91,10 @@ length(r.ord$dist) #reduces to 89 highly related unique [non-shared] pairs (late
 write.csv(r.ord,file="JaHighlyRelatedPairs.csv")
 
 #Merge highly related pair info with full sequence/metadata info:
-full<-read.csv("MelodicEvoSeq.csv",header=TRUE) #Import all sequences
+full <- suppressMessages(
+  read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+)
+
 j<-read.csv("JaHighlyRelatedPairs.csv",header=TRUE)
 e<-read.csv("EngHighlyRelatedPairs.csv",header=TRUE)
 e<-rbind(e,j)
