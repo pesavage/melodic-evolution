@@ -160,7 +160,7 @@ MelodicEvoAnalysis = function(s, name){
                  color = "red", 
                  width = 1, 
                  size = .6) +
-    geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
+    #geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
@@ -251,7 +251,7 @@ MelodicEvoAnalysis = function(s, name){
                  color = "red", 
                  width = 1, 
                  size = .6) +
-    geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
+    #geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
     theme(axis.text = element_text(size = 14),
           axis.title = element_text(size = 18, face = "bold"),
