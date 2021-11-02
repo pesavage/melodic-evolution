@@ -1,3 +1,6 @@
+# script to install necessary R packages
+# These will depend on the R version. Please check sessionInfo.txt
+
 list.of.packages <- c("plotrix", 
                       "seqinr",
                       "Biostrings",
@@ -16,7 +19,16 @@ list.of.packages <- c("plotrix",
                       "GADMTools",
                       "BiocManager",
                       "ggthemes",
-                      "boot")
+                      "boot",
+                      "dplyr",
+                      "ggthemes",
+                      "readxl",
+                      "brms",
+                      "tidybayes",
+                      "bayesplot",
+                      "projpred",
+                      "assertthat",
+                      "patchwork")
 
 new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 

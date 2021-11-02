@@ -36,7 +36,7 @@ suppressPackageStartupMessages({
 })
 
 ## Source analysis function
-source("MelodicEvoAnalysis.R")
+source("analysis/MelodicEvoFunction.R")
 
 # Make directories to store results if they don't exist
 if(!dir.exists("results/")) dir.create("results/")
@@ -50,22 +50,19 @@ if(!dir.exists("figures/")) dir.create("figures/")
  # Import all 10,000+ sequences. 
  # The highly related pairs were automatically identified using the scripts in "PID.R" and "Dist.R", but a lot of manual work was required to align related pairs, code functional positions, and count the numbers and sizes of all mutation types to create the "MelodicEvoSeq.csv" file used for subsequent analyses
 full <- suppressMessages(
-  read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+  read_xlsx("data/MelodicEvoSeq.xlsx", .name_repair = "universal")
 )
 d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 
 ##### Calculate mutation rates for different functional types ####
-# Full English subset
+#### Full English subset ####
 english <- subset(d, Language=="English")
 MelodicEvoAnalysis(english, "english")
 
-#########
-
-# Full Japanese subset
+#### Full Japanese subset ####
 japanese <- subset(d, Language=="Japanese")
 MelodicEvoAnalysis(japanese, "japanese")
 
-#########
 
 #### Sensitivity analyses ####
 # For English sample
@@ -79,16 +76,9 @@ english_new <- subset(e, Year>=median(e$Year,na.rm=TRUE)) #newer sample
 MelodicEvoAnalysis(english_new, "newenglish")
 
 # Singer
-# This subset does not have enough ornamental notes to run the analyses
-# Delete?
 singer <- subset(e, Same.singer=="Y")
 MelodicEvoAnalysis(singer, "englishsingerY")
 
-# This subset does not have enough ornamental notes to run the analyses. 
-# Delete?
-# Note: The Full English sample has 33 songs with Ornamental mutations.
-# These subsets have 17 and 16 respectively
-# This problem does not occur for the sister-Japanese analyses
 not_singer <- subset(e, Same.singer=="N") 
 MelodicEvoAnalysis(not_singer, "englishsingerN")
 
@@ -124,28 +114,32 @@ japancoder_gc <- subset(j, Alignment.functional.coding.performed.by..PES...Patri
 MelodicEvoAnalysis(japancoder_gc, "japanesecoderGC")
 
 # Descriptive stats for sensitivity analyses
-sens <- read.csv("sensitivity.csv")
+sens <- read.csv("data/sensitivity.csv")
 colMeans(sens, na.rm = TRUE) 
 # Means: 
 # Substitution: -0.9312500; 
 # Frequency:  -0.7071429 ;    
 # Function: 7.6863636 
-std.error(sens[,1],na.rm=TRUE) # Substitution r SE = 0.0163012
-std.error(sens[,2],na.rm=TRUE) # Frequency r SE = 0.07389054
-std.error(sens[,3],na.rm=TRUE) # Function t SE =  0.9381823
+apply(sens, 2, std.error, na.rm=TRUE)
+# Substitution r SE = 0.0163012
+# Frequency r SE = 0.07389054
+# Function t SE =  0.9381823
 
 ##### Build Map ####
-system("RScript MelodyMap.R") 
+system("RScript analysis/MelodyMap.R") 
 
 ##### Model data ####
 # First make the dataset - this relies on the above code being run.
 # This also creates the model figure
-system('RScript substitution_data.R')
+system('RScript analysis/substitution_data.R')
 
 # Then build the models. This takes some time. 
-system('RScript english_models.R')
-system('RScript japanese_models.R')
-system('RScript model_table.R')
+system('RScript analysis/english_models.R')
+system('RScript analysis/japanese_models.R')
+
+# Build modelling outputs
+system('RScript analysis/figure_s4b.R')
+system('RScript analysis/table_s3.R')
 
 #### Tests
 system('RScript test.R')

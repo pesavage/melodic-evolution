@@ -93,12 +93,14 @@ MelodicEvoAnalysis = function(s, name){
   print(cor.test(interval_substitutions, 
                  c(2:7), 
                  method="spearman",
-                 alternative="less"))
+                 alternative="less", 
+                 exact = FALSE))
   
   print(cor.test(interval_substitutions, 
                  c(2:7), 
                  method="pearson",
-                 alternative="less"))
+                 alternative="less", 
+                 exact = FALSE))
   
   # Graph of Intervals by Substitution count
   jpeg(paste0("figures/NumberSubstitutions_byintervaldistance_", name, ".jpeg"))
@@ -126,7 +128,8 @@ MelodicEvoAnalysis = function(s, name){
   print(cor.test(semitone,
                  c(1:11),
                  method="pearson",
-                 alternative="less"))
+                 alternative="less", 
+                 exact = FALSE))
   
   jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
   plot(c(1:11), 
@@ -405,7 +408,11 @@ MelodicEvoAnalysis = function(s, name){
        labels = c(1, 10, 100, 1000, 10000))
   dev.off()
   
-  print(cor.test(total,mutability,method="spearman",alternative="less"))
+  print(cor.test(total,
+                 mutability,
+                 method="spearman",
+                 alternative="less", 
+                 exact = FALSE))
   
   #print descriptive stats for melody length
   print(mean(s$n_notes))

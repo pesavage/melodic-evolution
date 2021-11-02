@@ -1,9 +1,10 @@
 ## This script aggregates the model output for each data subset
 ## into a single table
 
-library(brms)
-library(dplyr)
-
+suppressPackageStartupMessages({
+  library(brms)
+  library(dplyr)
+})
 
 build_table = function(suffix){
   model_files = list.files('results/', 

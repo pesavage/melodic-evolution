@@ -88,7 +88,7 @@ get_data = function(df){
   # a subtotal
   st = model_matrix %>% 
     group_by(note1, note2) %>% 
-    summarise(subtotal = sum(substitution_count))
+    summarise(subtotal = sum(substitution_count), .groups = 'keep')
   
   subtotal = st$subtotal
   names(subtotal) = paste0(st$note1, st$note2)
@@ -214,7 +214,9 @@ get_data = function(df){
 }
 
 ## Run function
-raw_data = read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+raw_data = suppressMessages(
+  read_xlsx("data/MelodicEvoSeq.xlsx", .name_repair = "universal")
+)
 
 english_raw  = raw_data[raw_data$Language == "English",]
 japanese_raw = raw_data[raw_data$Language == "Japanese",]

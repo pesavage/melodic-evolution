@@ -1,7 +1,9 @@
-library(ggplot2)
-library(dplyr)
-library(brms)
-library(patchwork)
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(dplyr)
+  library(brms)
+  library(patchwork)
+})
 
 ## Read in Data and models
 model_data = read.csv('data/model_data.csv')
@@ -46,7 +48,7 @@ data_prep = function(d, society, model){
   
   pred = predict(model, 
                    newdata = newdata) %>% data.frame
-  pred = cbind(pred, pred)
+  pred = cbind(newdata, pred)
   
   pred
 }

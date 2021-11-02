@@ -21,10 +21,10 @@ suppressPackageStartupMessages({
   library(readxl)
 })
 
-source("MelodicEvoAnalysis.R")
+source("analysis/MelodicEvoFunction.R")
 
 full = suppressMessages(
-  read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+  read_xlsx("data/MelodicEvoSeq.xlsx", .name_repair = "universal")
 )
 d    = subset(full, PairNo>0)  # Restrict to only highly related pairs
 
@@ -47,8 +47,8 @@ testthat::test_that("Mutation counts & Rates check", {
 
 # Intervals and Semitones check
 testthat::test_that("Interval & Semitones check", {
-  expect_equal(unname(e$interval), c(326, 203, 73, 22, 13, 2))
-  expect_equal(unname(e$semitone), c(70, 256, 135, 68, 73, 0, 22, 6 ,7 ,2, 0))
+  expect_equal(unname(e$interval), c(326, 202, 73, 22, 13, 2))
+  expect_equal(unname(e$semitone), c(70, 256, 135, 67, 73, 0, 22, 6 ,7 ,2, 0))
 })
 
 # Note counts check
@@ -61,11 +61,6 @@ test_that("Note Counts check", {
 # Note totals check
 test_that("Note Counts check", {
   expect_equal(names(e$total), notes)
-  expect_equal(unname(e$total), c(2669, 1, 1501, 410, 1367, 1285, 2, 
-                                        2608, 14, 1012, 586, 262))
+  expect_equal(unname(e$total), c(2670, 1, 1501, 410, 1368, 1285, 2, 
+                                        2610, 14, 1014, 586, 262))
 })
-
-1 C added
-1 E added
-2 G
-2 A

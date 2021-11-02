@@ -92,7 +92,7 @@ write.csv(r.ord,file="JaHighlyRelatedPairs.csv")
 
 #Merge highly related pair info with full sequence/metadata info:
 full <- suppressMessages(
-  read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+  read_xlsx("data/MelodicEvoSeq.xlsx", .name_repair = "universal")
 )
 
 j<-read.csv("JaHighlyRelatedPairs.csv",header=TRUE)
