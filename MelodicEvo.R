@@ -25,7 +25,6 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
   library(phangorn)
   library(GADMTools)
-<<<<<<< HEAD
   # For MelodicEvo Function
   library(stringr)
   library(dplyr)
@@ -33,9 +32,7 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(ggthemes)
   library(boot)
-=======
   library(readxl)
->>>>>>> remove-datacsv
 })
 
 ## Source analysis function
