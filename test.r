@@ -1,8 +1,7 @@
-## Tests
-library(testthat)
-
-# For analysis
 suppressPackageStartupMessages({
+  ## Tests
+  library(testthat) 
+  # For analysis
   library(plotrix)
   library(seqinr)
   library(Biostrings)
@@ -13,18 +12,21 @@ suppressPackageStartupMessages({
   library(varhandle)
   library(stringr)
   library(seqRFLP)
-  library(pwr)
-  library(lsr)
+  library(pwr) 
+  library(lsr) 
   library(sp)
   library(RColorBrewer)
   library(phangorn)
   library(GADMTools)
+  library(readxl)
 })
 
 source("MelodicEvoAnalysis.R")
 
-full = read.csv("MelodicEvoSeq.csv", header=TRUE, row.names=1)
-d    = subset(full, PairNo>0)  #Restrict to only highly related pairs
+full = suppressMessages(
+  read_xlsx("MelodicEvoSeq.xlsx", .name_repair = "universal")
+)
+d    = subset(full, PairNo>0)  # Restrict to only highly related pairs
 
 english = subset(d, Language=="English")
 
@@ -62,3 +64,8 @@ test_that("Note Counts check", {
   expect_equal(unname(e$total), c(2669, 1, 1501, 410, 1367, 1285, 2, 
                                         2608, 14, 1012, 586, 262))
 })
+
+1 C added
+1 E added
+2 G
+2 A

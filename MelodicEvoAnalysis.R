@@ -23,12 +23,22 @@ MelodicEvoAnalysis = function(s, name){
   s$n_final      = str_length(s$Final.note)
   s$n_stressed   = str_length(s$Stressed.notes)
   s$n_unstressed = s$n_notes - 
-    rowSums(s[,c("n_ornamental", "n_final", "n_stressed")]) 
+    rowSums(s[,c("n_ornamental", "n_final", "n_stressed")], na.rm = TRUE) 
   
   s$n_ornamentalmutations = str_length(s$Ornamental.mutations)
   s$n_finalmutations      = str_length(s$Final.mutations)
   s$n_stressedmutations   = str_length(s$Stress.mutations)
   s$n_unstressedmutations = str_length(s$Unstressed.mutations)
+  
+  # If no mutations, change to 0 instead of NA
+  s$n_ornamentalmutations = ifelse(is.na(s$n_ornamentalmutations), 0,
+                                   s$n_ornamentalmutations)
+  s$n_finalmutations      = ifelse(is.na(s$n_finalmutations), 0,
+                                   s$n_finalmutations)
+  s$n_stressedmutations   = ifelse(is.na(s$n_stressedmutations), 0,
+                                   s$n_stressedmutations)
+  s$n_unstressedmutations = ifelse(is.na(s$n_unstressedmutations), 0,
+                                   s$n_unstressedmutations)
   
   s$finalmutation_rate      = s$n_finalmutations / s$n_final
   s$stressedmutation_rate   = s$n_stressedmutations / s$n_stressed
@@ -37,13 +47,13 @@ MelodicEvoAnalysis = function(s, name){
   
   s$strongfunction_rate = (s$n_finalmutations + s$n_stressedmutations) / (s$n_final + s$n_stressed)
   s$weakfunction_rate   = (s$n_unstressedmutations + s$n_ornamentalmutations) /
-    (s$n_unstressed + s$n_ornamental) 
+    rowSums(s[,c("n_unstressed", "n_ornamental")], na.rm = TRUE)
   
   single_song = s[!duplicated(s$PairNo),]
   
   # Get columns of semitonal distances
   semitonal_columns = str_detect(colnames(single_song), 
-                                 "X[0-9]{1,2}\\.semitone\\.substitutions")
+                                 "\\.semitone\\.substitutions")
   # Calculate semitonal distance frequency
   semitone = colSums(single_song[,semitonal_columns],na.rm=TRUE) 
   
@@ -107,8 +117,16 @@ MelodicEvoAnalysis = function(s, name){
   dev.off()
   
   #grouped by # of semitones
-  print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
-  print(cor.test(semitone,c(1:11),method="pearson",alternative="less"))
+  print(cor.test(semitone,
+                 c(1:11),
+                 method="spearman",
+                 alternative="less", 
+                 exact = FALSE))
+  
+  print(cor.test(semitone,
+                 c(1:11),
+                 method="pearson",
+                 alternative="less"))
   
   jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
   plot(c(1:11), 
@@ -151,14 +169,11 @@ MelodicEvoAnalysis = function(s, name){
              y = Val, 
              fill = MeasureType)) +
     geom_violin()  + 
-    geom_jitter(binaxis = 'y', 
-                stackdir = 'center', 
-                size = 1,
+    geom_jitter(size = 1,
                 position = position_jitter(0.3)) + 
     stat_summary(fun.data = data_summary, 
                  geom = "pointrange", 
                  color = "red", 
-                 width = 1, 
                  size = .6) +
     #geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
@@ -181,7 +196,8 @@ MelodicEvoAnalysis = function(s, name){
   print(t.test(strong_weak$weakfunction_rate,
                strong_weak$strongfunction_rate,
                alternative = "greater",
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   print(cohensD( x = strong_weak$weakfunction_rate, y = strong_weak$strongfunction_rate, method = "paired"))
   
   # unpaired t-test
@@ -213,12 +229,15 @@ MelodicEvoAnalysis = function(s, name){
                               "ornamentalmutation_rate",
                               "PairNo")], 
                         by = list(PairNo = s$PairNo),
-                        FUN = mean)
+                        FUN = mean, na.rm = TRUE)
   
   #Check sample sizes
-  length(functional_types$FinMutRate) #no. of pairs
-  sum(!is.na(functional_types$OrnMutRate)) #no. of pairs with ornamental notes
-  sum(is.na(functional_types$OrnMutRate)) #no. of pairs without ornamental notes
+  #no. of pairs
+  length(functional_types$finalmutation_rate)
+  #no. of pairs with ornamental notes
+  sum(!is.na(functional_types$ornamentalmutation_rate))  
+  #no. of pairs without ornamental notes
+  sum(is.na(functional_types$ornamentalmutation_rate)) 
   functional_types<-functional_types[,c("finalmutation_rate",                             
                                         "stressedmutation_rate",
                                         "unstressedmutation_rate", 
@@ -242,14 +261,11 @@ MelodicEvoAnalysis = function(s, name){
                   y = Val, 
                   fill = MeasureType)) +
     geom_violin()  + 
-    geom_jitter(binaxis = 'y', 
-                stackdir = 'center', 
-                size = 1,
+    geom_jitter(size = 1,
                 position = position_jitter(0.3)) + 
     stat_summary(fun.data = data_summary, 
                  geom = "pointrange", 
-                 color = "red", 
-                 width = 1, 
+                 color = "red",
                  size = .6) +
     #geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
@@ -272,17 +288,20 @@ MelodicEvoAnalysis = function(s, name){
   print(t.test(functional_types$ornamentalmutation_rate,
                functional_types$unstressedmutation_rate,
                alternative = "greater", 
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   
   print(t.test(functional_types$unstressedmutation_rate,
                functional_types$stressedmutation_rate,
                alternative = "greater",
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   
   print(t.test(functional_types$stressedmutation_rate,
                functional_types$finalmutation_rate,
                alternative = "greater", 
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   
   colMeans(functional_types, na.rm = TRUE)
   #number of pairs with final mutations
@@ -308,13 +327,23 @@ MelodicEvoAnalysis = function(s, name){
   
   song_counts = 
     sapply(notes, function(n) {
-      total = sum(str_count(single_song$Full.note.sequence..unaligned., n))
-      ornamental_mutations = sum(str_count(single_song$Ornamental.mutations, n))
-      final_mutations = sum(str_count(single_song$Final.mutations, n))
-      stress_mutations = sum(str_count(single_song$Stress.mutations, n))
-      unstressed_mutations = sum(str_count(single_song$Unstressed.mutations, n))
+      total = 
+        sum(str_count(single_song$Full.note.sequence..unaligned., n), 
+                  na.rm = TRUE)
+      ornamental_mutations = 
+        sum(str_count(single_song$Ornamental.mutations, n), 
+                                 na.rm = TRUE)
+      final_mutations = 
+        sum(str_count(single_song$Final.mutations, n), 
+                            na.rm = TRUE)
+      stress_mutations = 
+        sum(str_count(single_song$Stress.mutations, n), 
+                             na.rm = TRUE)
+      unstressed_mutations = sum(str_count(single_song$Unstressed.mutations, 
+                                           n), na.rm = TRUE)
       # Total - all mutations gives the note count
-      total - (ornamental_mutations + final_mutations + stress_mutations + unstressed_mutations)
+      total - (ornamental_mutations + final_mutations + 
+                 stress_mutations + unstressed_mutations)
     })
   
   mat = matrix(NA, 
@@ -332,7 +361,9 @@ MelodicEvoAnalysis = function(s, name){
   #### Calculate Mutability ####
   mat[upper.tri(mat)] = t(mat)[upper.tri(mat)]
 
-  changed = colSums(mat_indel[,2:ncol(mat_indel)]) - song_counts
+  print(colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE))
+  
+  changed = colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE) - song_counts
   
   print(colSums(mat_indel[,2:ncol(mat_indel)]))
   
@@ -345,7 +376,7 @@ MelodicEvoAnalysis = function(s, name){
   write.csv(mutability, paste0("results/", name, "_mutability.csv"))
   write.csv(total, paste0("results/", name, "_notecounts.csv"))
   
-  mat = rbind(mat, c(NA, mutability))
+  mat = rbind(mat, c(mutability))
   write.csv(mat,
             paste0("results/", name, "_SubstitutionMatrix.csv")
   )
@@ -443,8 +474,10 @@ MelodicEvoAnalysis = function(s, name){
   # dev.off()
   
   # Outputs for testing
-  list(mut = s, interval = interval_substitutions, semitone = semitone, 
+  invisible(
+    list(mut = s, interval = interval_substitutions, semitone = semitone, 
        strongweak = strong_weak,
        functional_types = functional_types, song_counts = song_counts,
        total = total, note_occurences = note_occurences)
+    )
 }

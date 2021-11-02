@@ -12,4 +12,8 @@ modellingwalkthrough_2.Rmd
 modellingwalkthrough_2.html
 to-delete/
 data/model-table.xlsx
+<<<<<<< HEAD
 not-git/
+=======
+not-git/
+>>>>>>> remove-datacsv
