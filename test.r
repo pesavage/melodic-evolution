@@ -18,6 +18,7 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
   library(phangorn)
   library(GADMTools)
+  library(readxl)
 })
 
 source("MelodicEvoAnalysis.R")

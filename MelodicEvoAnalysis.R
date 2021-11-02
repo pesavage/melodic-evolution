@@ -117,8 +117,16 @@ MelodicEvoAnalysis = function(s, name){
   dev.off()
   
   #grouped by # of semitones
-  print(cor.test(semitone,c(1:11),method="spearman",alternative="less"))
-  print(cor.test(semitone,c(1:11),method="pearson",alternative="less"))
+  print(cor.test(semitone,
+                 c(1:11),
+                 method="spearman",
+                 alternative="less", 
+                 exact = FALSE))
+  
+  print(cor.test(semitone,
+                 c(1:11),
+                 method="pearson",
+                 alternative="less"))
   
   jpeg(paste0("figures/NumberSubstitutions_bysemitonedistance_", name, ".jpeg"))
   plot(c(1:11), 
@@ -161,14 +169,11 @@ MelodicEvoAnalysis = function(s, name){
              y = Val, 
              fill = MeasureType)) +
     geom_violin()  + 
-    geom_jitter(binaxis = 'y', 
-                stackdir = 'center', 
-                size = 1,
+    geom_jitter(size = 1,
                 position = position_jitter(0.3)) + 
     stat_summary(fun.data = data_summary, 
                  geom = "pointrange", 
                  color = "red", 
-                 width = 1, 
                  size = .6) +
     #geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
@@ -191,7 +196,8 @@ MelodicEvoAnalysis = function(s, name){
   print(t.test(strong_weak$weakfunction_rate,
                strong_weak$strongfunction_rate,
                alternative = "greater",
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   print(cohensD( x = strong_weak$weakfunction_rate, y = strong_weak$strongfunction_rate, method = "paired"))
   
   # unpaired t-test
@@ -255,14 +261,11 @@ MelodicEvoAnalysis = function(s, name){
                   y = Val, 
                   fill = MeasureType)) +
     geom_violin()  + 
-    geom_jitter(binaxis = 'y', 
-                stackdir = 'center', 
-                size = 1,
+    geom_jitter(size = 1,
                 position = position_jitter(0.3)) + 
     stat_summary(fun.data = data_summary, 
                  geom = "pointrange", 
-                 color = "red", 
-                 width = 1, 
+                 color = "red",
                  size = .6) +
     #geom_hline(yintercept = 85, colour = "red", linetype = "dashed") + 
     theme_base() + 
@@ -285,17 +288,20 @@ MelodicEvoAnalysis = function(s, name){
   print(t.test(functional_types$ornamentalmutation_rate,
                functional_types$unstressedmutation_rate,
                alternative = "greater", 
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   
   print(t.test(functional_types$unstressedmutation_rate,
                functional_types$stressedmutation_rate,
                alternative = "greater",
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   
   print(t.test(functional_types$stressedmutation_rate,
                functional_types$finalmutation_rate,
                alternative = "greater", 
-               paired = TRUE))
+               paired = TRUE,
+               na.action = "na.omit"))
   
   colMeans(functional_types, na.rm = TRUE)
   #number of pairs with final mutations
@@ -355,6 +361,8 @@ MelodicEvoAnalysis = function(s, name){
   #### Calculate Mutability ####
   mat[upper.tri(mat)] = t(mat)[upper.tri(mat)]
 
+  print(colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE))
+  
   changed = colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE) - song_counts
   
   total = changed + song_counts
@@ -366,7 +374,7 @@ MelodicEvoAnalysis = function(s, name){
   write.csv(mutability, paste0("results/", name, "_mutability.csv"))
   write.csv(total, paste0("results/", name, "_notecounts.csv"))
   
-  mat = rbind(mat, c(NA, mutability))
+  mat = rbind(mat, c(mutability))
   write.csv(mat,
             paste0("results/", name, "_SubstitutionMatrix.csv")
   )
@@ -464,8 +472,10 @@ MelodicEvoAnalysis = function(s, name){
   # dev.off()
   
   # Outputs for testing
-  list(mut = s, interval = interval_substitutions, semitone = semitone, 
+  invisible(
+    list(mut = s, interval = interval_substitutions, semitone = semitone, 
        strongweak = strong_weak,
        functional_types = functional_types, song_counts = song_counts,
        total = total, note_occurences = note_occurences)
+    )
 }

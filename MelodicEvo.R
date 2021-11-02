@@ -71,7 +71,6 @@ MelodicEvoAnalysis(english_old, "oldenglish")
 english_new <- subset(e, Year>=median(e$Year,na.rm=TRUE)) #newer sample
 MelodicEvoAnalysis(english_new, "newenglish")
 
-33
 # Singer
 # This subset does not have enough ornamental notes to run the analyses
 # Delete?
