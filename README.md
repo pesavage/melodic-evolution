@@ -1,4 +1,5 @@
-# Code and source data for: Sequence alignment of folk song melodies reveals cross-cultural mechanisms of musical evolution. 
+# Sequence alignment of folk song melodies reveals cross-cultural mechanisms of musical evolution. 
+## Code and source data
 
 Savage, P. E., Passmore, S., Chiba, G., Currie, T. E., Suzuki, H., & Atkinson, Q. D. (2020). Sequence alignment of folk song melodies reveals cross-cultural mechanisms of musical evolution. PsyArXiv Preprint. https://doi.org/10.31234/osf.io/5rj6y
 
