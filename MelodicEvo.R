@@ -64,7 +64,7 @@ MelodicEvoAnalysis(japanese, "japanese")
 # For English sample
 e <- subset(d, Language=="English")
 
-#Time
+# Time
 english_old <- subset(e, Year<median(e$Year,na.rm=TRUE)) #older sample
 MelodicEvoAnalysis(english_old, "oldenglish")
 
@@ -74,14 +74,14 @@ MelodicEvoAnalysis(english_new, "newenglish")
 # Singer
 # This subset does not have enough ornamental notes to run the analyses
 # Delete?
-singer <- subset(e, Same.singer=="Y") 
+singer <- subset(e, Same.singer=="Y")
 MelodicEvoAnalysis(singer, "englishsingerY")
 
 # This subset does not have enough ornamental notes to run the analyses. 
 # Delete?
 # Note: The Full English sample has 33 songs with Ornamental mutations.
 # These subsets have 17 and 16 respectively
-# This problem does not occur for the sister-japanese analyses
+# This problem does not occur for the sister-Japanese analyses
 not_singer <- subset(e, Same.singer=="N") 
 MelodicEvoAnalysis(not_singer, "englishsingerN")
 
@@ -92,7 +92,7 @@ MelodicEvoAnalysis(coder_pes, "englishcoderPES")
 coder_gc <- subset(e, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="GC")
 MelodicEvoAnalysis(coder_gc, "englishcodeGC")
 
-#For Japanese sample
+#### For Japanese sample ####
 j <- subset(d, Language=="Japanese")
 
 #Time
@@ -109,7 +109,7 @@ MelodicEvoAnalysis(singer_japanese, "japanesesingerY")
 notsinger_japanese <- subset(j, Same.singer=="N")
 MelodicEvoAnalysis(notsinger_japanese, "japanesesingerN")
 
-#Coder
+# Coder
 japancoder_pes <- subset(j, Alignment.functional.coding.performed.by..PES...Patrick.E..Savage..GC...Gakuto.Chiba.=="PES")
 MelodicEvoAnalysis(japancoder_pes, "japanesecoderPES")
 

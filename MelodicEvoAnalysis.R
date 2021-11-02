@@ -23,7 +23,7 @@ MelodicEvoAnalysis = function(s, name){
   s$n_final      = str_length(s$Final.note)
   s$n_stressed   = str_length(s$Stressed.notes)
   s$n_unstressed = s$n_notes - 
-    rowSums(s[,c("n_ornamental", "n_final", "n_stressed")]) 
+    rowSums(s[,c("n_ornamental", "n_final", "n_stressed")], na.rm = TRUE) 
   
   s$n_ornamentalmutations = str_length(s$Ornamental.mutations)
   s$n_finalmutations      = str_length(s$Final.mutations)
@@ -47,7 +47,7 @@ MelodicEvoAnalysis = function(s, name){
   
   s$strongfunction_rate = (s$n_finalmutations + s$n_stressedmutations) / (s$n_final + s$n_stressed)
   s$weakfunction_rate   = (s$n_unstressedmutations + s$n_ornamentalmutations) /
-    (s$n_unstressed + s$n_ornamental) 
+    rowSums(s[,c("n_unstressed", "n_ornamental")], na.rm = TRUE)
   
   single_song = s[!duplicated(s$PairNo),]
   
@@ -150,7 +150,7 @@ MelodicEvoAnalysis = function(s, name){
   strong_weak = aggregate(s[, c("PairNo", "strongfunction_rate", 
                               "weakfunction_rate","PID")], 
                    by = list(PairNo = s$PairNo),
-                   FUN = mean, na.rm = TRUE)
+                   FUN = mean)
 
   #Check sample sizes
   length(strong_weak$strongfunction_rate) #no. of pairs
