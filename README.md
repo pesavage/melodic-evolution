@@ -2,14 +2,11 @@
 Code and source data for:
 Savage, P. E., Passmore, S., Chiba, G., Currie, T. E., Suzuki, H., & Atkinson, Q. D. (2020). Sequence alignment of folk song melodies reveals cross-cultural mechanisms of musical evolution. PsyArXiv Preprint. https://doi.org/10.31234/osf.io/5rj6y
 
-To run the analyses, type:
+To run the analyses: first clone the repository, and then run the script `MelodicEvo.R` in R or R Studio. 
 
-source("https://raw.githubusercontent.com/pesavage/melodic-evolution/master/MelodicEvo.R")
+This script re-produces the paper's main analyses, as well as several tests of the main effects on different data subsets.
+Result files and figures are not included by default. 
 
-in R or R Studio. Several of the sub-scripts are commented out because they have been pre-calculated. In particular, the distance matrices and identification of highly related melodies have been pre-calculated, so you don't need to run the "PID.R" or "Dist.R" subscripts. To recalculate distance matrices and re-identify highly related pairs, uncomment the following lines of code from "MelodicEvo.R" after downloading the full English and Japanese distance matrices from https://osf.io/nhvzw/ (but be aware that this will take up to a month on a standard computer):
+The scripts `analysis/PID.R` and `analysis/Dist.R` are commented out because they have been pre-calculated. To recalculate distance matrices and re-identify highly related pairs, re-run these scripts after downloading the full English and Japanese distance matrices from https://osf.io/nhvzw/. This will take up to a month on a personal computer. 
 
-source("PID.R")
-
-source("Dist.R")
-
-Because the main MelodicEvoSeq.csv file used in analyses can't preserve the detailed formatting (e.g., bold, italic, etc. for functional positions), a MelodicEvoSeq.xlsx file with formatting for the highly related pairs is also included for convenience.
+To ensure results are accurately re-produced, please check that all packages used match those used in the reported results. These details are held in `sessionInfo.txt`. 
