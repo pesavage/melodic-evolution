@@ -1,6 +1,6 @@
 source("install.R")
 
-#If Biostrings is already installed you can comment out the following three lines of code: 
+#If Biostrings is already installed you can comment out the following three lines of code
 if (!requireNamespace("BiocManager", quietly = TRUE)){
   install.packages("BiocManager")
   BiocManager::install("Biostrings") 
@@ -25,6 +25,13 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
   library(phangorn)
   library(GADMTools)
+  # For MelodicEvo Function
+  library(stringr)
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(ggthemes)
+  library(boot)
 })
 
 # Make directories to store results if they don't exist
