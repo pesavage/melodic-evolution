@@ -28,7 +28,11 @@ list.of.packages <- c("plotrix",
                       "bayesplot",
                       "projpred",
                       "assertthat",
-                      "patchwork")
+                      # for maps
+                      "patchwork",
+                      "sf",
+                      "rnaturalearth"
+                      )
 
 new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
