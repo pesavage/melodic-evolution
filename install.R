@@ -1,6 +1,12 @@
 # script to install necessary R packages
 # These will depend on the R version. Please check sessionInfo.txt
 
+
+if (!requireNamespace("pacman", quietly = TRUE)){
+  install.packages("pacman")
+}
+library(pacman)
+
 list.of.packages <- c("plotrix", 
                       "seqinr",
                       "Biostrings",
@@ -34,7 +40,5 @@ list.of.packages <- c("plotrix",
                       "rnaturalearth"
                       )
 
-new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
-if(length(new.packages)) install.packages(new.packages)
-
+p_install(list.of.packages, character.only = TRUE, force = FALSE)

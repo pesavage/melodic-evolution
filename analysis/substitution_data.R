@@ -221,6 +221,9 @@ raw_data = suppressMessages(
 english_raw  = raw_data[raw_data$Language == "English",]
 japanese_raw = raw_data[raw_data$Language == "Japanese",]
 
+assert_that(nrow(english_raw) == 484)
+assert_that(nrow(japanese_raw) == 172)
+
 english_modeldata  = get_data(english_raw)
 japanese_modeldata = get_data(japanese_raw)
 
