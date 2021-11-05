@@ -40,8 +40,8 @@ get_data = function(df){
   model_matrix = as.data.frame(model_matrix)
   colnames(model_matrix) = c("ID", "note1", "note2", "semitonal_distance", "functional_change", "substitution_count")
   
-  model_matrix$substitution_count = as.numeric(model_matrix$substitution_count)
-  model_matrix$semitonal_distance = as.numeric(model_matrix$semitonal_distance)
+  model_matrix$substitution_count = as.numeric(as.character(model_matrix$substitution_count))
+  model_matrix$semitonal_distance = as.numeric(as.character(model_matrix$semitonal_distance))
   
   assert_that(all(table(model_matrix$ID) == 1))
   
