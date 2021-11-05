@@ -319,12 +319,12 @@ MelodicEvoAnalysis = function(s, name){
   indel = colSums(single_song[,indel_columns],na.rm=TRUE) 
   sum(indel) # total no. of indels
   
-  # Get all substition columns, in the form of two letters
+  # Get all substitution columns, in the form of two letters
   sub_columns = str_detect(colnames(single_song), "^[A-Za-z]{2}$")
   sub = colSums(single_song[,sub_columns],na.rm=TRUE) 
   sum(sub) # total no. of substitutions
   
-  ###The following section creates a substitution matrix in which the diagonal represents the number of times a given note appears unchanged in both melodies from a highly related pair, while the other cells represent the sum of all substitutions involving each possible pair of notes. The diagonal is calculated by subtracting the sum of all substitutions and indels from the total number of times a given note appears.
+  ###The following section creates a substitution matrix in which the diagonal represents the number of times a given note appears unchanged in both melodies from a highly related pair, while the other cells represent the sum of all substitutions involving each possible pair of notes. The diagonal is calculated by subtracting the sum of all substitutions and indels from the total number of times a given note appears. This information is used to manually create Fig. 3C.
   notes = c("C", "d",	"D",	"e",	"E",	"F",	"g",
             "G",	"a",	"A",	"b",	"B")
   
@@ -356,12 +356,12 @@ MelodicEvoAnalysis = function(s, name){
   
   mat[lower.tri(mat)] = sub
   diag(mat) = song_counts
-  # Add deletions
+  # Add indels
   mat_indel = rbind(rep(NA, ncol(mat)), mat)
   mat_indel = cbind(c(0, indel), mat_indel)
   mat_indel[upper.tri(mat_indel)] = t(mat_indel)[upper.tri(mat_indel)]
   
-  #### Calculate Mutability ####
+  #### Calculate Mutability #### [these analyses were not included in the final version but are included in earlier PsyArXiv preprints]
   mat[upper.tri(mat)] = t(mat)[upper.tri(mat)]
 
   print(colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE))
