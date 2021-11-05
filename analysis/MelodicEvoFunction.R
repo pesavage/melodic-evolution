@@ -204,8 +204,8 @@ MelodicEvoAnalysis = function(s, name){
   print(cohensD( x = strong_weak$weakfunction_rate, y = strong_weak$strongfunction_rate, method = "paired"))
   
   # unpaired t-test
-  print(t.test(strong_weak$strongfunction_rate,
-               strong_weak$weakfunction_rate,
+  print(t.test(strong_weak$weakfunction_rate,
+               strong_weak$strongfunction_rate,
                alternative = "greater",
                paired=FALSE)) 
   
