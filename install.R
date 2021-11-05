@@ -41,4 +41,6 @@ list.of.packages <- c("plotrix",
                       )
 
 
-p_install(list.of.packages, character.only = TRUE, force = FALSE)
+p_install(list.of.packages, 
+          character.only = TRUE, 
+          force = FALSE)
