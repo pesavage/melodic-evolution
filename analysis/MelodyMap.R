@@ -11,7 +11,8 @@ suppressPackageStartupMessages({
 
 #### Data ####
 data = suppressMessages(
-  read_xlsx("data/MelodicEvoSeq.xlsx", .name_repair = "universal")
+  read_xlsx("data/MelodicEvoSeq.xlsx", 
+            .name_repair = "universal")
 )
   
 song_frequency = data %>%

@@ -2,8 +2,8 @@
 # These will depend on the R version. Please check sessionInfo.txt
 
 
-if (!requireNamespace(pacman, quietly = TRUE)){
-  install.packages(pacman)
+if (!requireNamespace("pacman", quietly = TRUE)){
+  install.packages("pacman")
 }
 library(pacman)
 
