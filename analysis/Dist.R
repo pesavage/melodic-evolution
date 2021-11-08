@@ -12,7 +12,11 @@ data<-GET('https://osf.io/43kxu//?action=download', write_disk('JapanDist.txt', 
 eng.d<-as.dist(as.matrix(read.table("EnglishDist.txt"))) 
 
 #plot histogram
-hist(eng.d)
+#hist(eng.d) #This creates the original histogram without log-transformed y-axis - this makes it hard to see the pairs actually sampled
+hist.data = hist(eng.d, plot=F)
+hist.data$counts = log10(hist.data$counts)
+plot(hist.data, ylab='No. of melody pairs',yaxt="n",xlim=c(0,1))
+axis(2, at=c(0,2,4,6), labels=c(1,100,"10,000","1,000,000"))
 abline(v=0.15, lty=2)
 
 #sort by similarity
@@ -55,7 +59,11 @@ write.csv(r.ord,file="EngHighlyRelatedPairs.csv")
 ja.d<-as.dist(as.matrix(read.table("JapanDist.txt"))) 
 
 #plot histogram
-hist(ja.d)
+#hist(ja.d) #This creates the original histogram without log-transformed y-axis - this makes it hard to see the pairs actually sampled
+hist.data = hist(ja.d, plot=F)
+hist.data$counts = log10(hist.data$counts)
+plot(hist.data, ylab='No. of melody pairs',yaxt="n",xlim=c(0,1))
+axis(2, at=c(0,2,4,6), labels=c(1,100,"10,000","1,000,000"))
 abline(v=0.15, lty=2)
 
 #sort by similarity
