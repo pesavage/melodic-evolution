@@ -43,8 +43,8 @@ if(!dir.exists("results/")) dir.create("results/")
 if(!dir.exists("figures/")) dir.create("figures/")
 
 # To calculate distance matrices  
-#source(PID.R) #uncomment this to recalculate distance matrices of PID among the 10,064 melodic variants, but be aware that this will take up to a month on a standard computer!
-#source(Dist.R) # uncomment this to re-dentify highly related pairs of melodies
+#source("analysis/PID.R") #uncomment this to recalculate distance matrices of PID among the 10,064 melodic variants, but be aware that this will take up to a month on a standard computer!
+#source("analysis/Dist.R") # uncomment this to re-dentify highly related pairs of melodies
 
 ##### Calculate evolutionary rates of highly-related melodic variant pairs ####
  # Import all 10,000+ sequences. 
