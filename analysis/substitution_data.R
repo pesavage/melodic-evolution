@@ -199,13 +199,12 @@ get_data = function(df){
   
   
   ## Standardization
-  model_matrix$frequency1 = 
-    model_matrix$frequency1 / 
-    max(model_matrix[,c("frequency1", "frequency2")])
-  model_matrix$frequency2 = 
-    model_matrix$frequency2 / 
-    max(model_matrix[,c("frequency1", "frequency2")])
-  
+  max_value = max(c(model_matrix$frequency1, model_matrix$frequency1))
+  model_matrix$frequency1 =
+    model_matrix$frequency1 / max_value
+  model_matrix$frequency2 =
+    model_matrix$frequency2 / max_value
+
   model_matrix$functionaltotal_normal = model_matrix$functional_total
   model_matrix$functional_total = 
     model_matrix$functional_total / max(model_matrix$functional_total)
@@ -220,6 +219,9 @@ raw_data = suppressMessages(
 
 english_raw  = raw_data[raw_data$Language == "English",]
 japanese_raw = raw_data[raw_data$Language == "Japanese",]
+
+assert_that(nrow(english_raw) == 484)
+assert_that(nrow(japanese_raw) == 172)
 
 english_modeldata  = get_data(english_raw)
 japanese_modeldata = get_data(japanese_raw)
