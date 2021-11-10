@@ -317,12 +317,18 @@ MelodicEvoAnalysis = function(s, name){
   # followed by a .
   indel_columns = str_detect(colnames(single_song), "^[A-Za-z]{1}\\.$")
   indel = colSums(single_song[,indel_columns],na.rm=TRUE) 
-  sum(indel) # total no. of indels
+  print(
+    paste0("Total number of indels: ", sum(indel))
+           )
+  
   
   # Get all substitution columns, in the form of two letters
   sub_columns = str_detect(colnames(single_song), "^[A-Za-z]{2}$")
   sub = colSums(single_song[,sub_columns],na.rm=TRUE) 
-  sum(sub) # total no. of substitutions
+  
+  print(
+    paste0("Total number of substitutions: ", sum(sub))
+  )
   
   ###The following section creates a substitution matrix in which the diagonal represents the number of times a given note appears unchanged in both melodies from a highly related pair, while the other cells represent the sum of all substitutions involving each possible pair of notes. The diagonal is calculated by subtracting the sum of all substitutions and indels from the total number of times a given note appears. This information is used to manually create Fig. 3C.
   notes = c("C", "d",	"D",	"e",	"E",	"F",	"g",
@@ -364,17 +370,18 @@ MelodicEvoAnalysis = function(s, name){
   #### Calculate Mutability #### [these analyses were not included in the final version but are included in earlier PsyArXiv preprints]
   mat[upper.tri(mat)] = t(mat)[upper.tri(mat)]
 
-  print(colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE))
+  # print(colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE))
   
   changed = colSums(mat_indel[,2:ncol(mat_indel)], na.rm = TRUE) - song_counts
   
-  print(colSums(mat_indel[,2:ncol(mat_indel)]))
+  # print(colSums(mat_indel[,2:ncol(mat_indel)]))
   
   total = changed + song_counts
   print("CHANGED")
   print(changed)
   print("MUTABILITY")
   (mutability = changed / total)
+  print(mutability)
   
   write.csv(mutability, paste0("results/", name, "_mutability.csv"))
   write.csv(total, paste0("results/", name, "_notecounts.csv"))
@@ -415,10 +422,10 @@ MelodicEvoAnalysis = function(s, name){
                  exact = FALSE))
   
   #print descriptive stats for melody length
-  print(mean(s$n_notes))
-  print(median(s$n_notes))
-  print(min(s$n_notes))
-  print(max(s$n_notes))
+  print(paste0("Mean notes: ", mean(s$n_notes)))
+  print(paste0("Median notes: ", median(s$n_notes)))
+  print(paste0("Min notes: ", min(s$n_notes)))
+  print(paste0("Max notes: ", max(s$n_notes)))
   
   #####Calculate scale frequencies:
   # extract unique notes/scales
@@ -428,57 +435,45 @@ MelodicEvoAnalysis = function(s, name){
            str_count(single_song$Full.note.sequence..unaligned., note))
   colnames(note_occurences) = notes
   
-  # single_song$sC<-ifelse(single_song$C>0,"C","")
+  get_scale = function(x, notes = notes){
+    found_notes = unique(strsplit(x, "")[[1]])
+    found_notes = factor(found_notes, levels = notes)
+    paste0(found_notes[order(found_notes)], collapse = "")
+  }
   
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,123]<-ifelse(single_song[i,111]==0,single_song[i,122],paste0(c(single_song[i,122],"d"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,124]<-ifelse(single_song[i,112]==0,single_song[i,123],paste0(c(single_song[i,123],"D"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,125]<-ifelse(single_song[i,113]==0,single_song[i,124],paste0(c(single_song[i,124],"e"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,126]<-ifelse(single_song[i,114]==0,single_song[i,125],paste0(c(single_song[i,125],"E"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,127]<-ifelse(single_song[i,115]==0,single_song[i,126],paste0(c(single_song[i,126],"F"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,128]<-ifelse(single_song[i,116]==0,single_song[i,127],paste0(c(single_song[i,127],"g"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,129]<-ifelse(single_song[i,117]==0,single_song[i,128],paste0(c(single_song[i,128],"G"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,130]<-ifelse(single_song[i,118]==0,single_song[i,129],paste0(c(single_song[i,129],"a"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,131]<-ifelse(single_song[i,119]==0,single_song[i,130],paste0(c(single_song[i,130],"A"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,132]<-ifelse(single_song[i,120]==0,single_song[i,131],paste0(c(single_song[i,131],"b"),collapse = ""))
-  # }
-  # for(i in 1:length(single_song$C)){
-  #   single_song[i,133]<-ifelse(single_song[i,121]==0,single_song[i,132],paste0(c(single_song[i,132],"B"),collapse = ""))
-  # }
-  # names(single_song)[133] <- "scale"
-  # single_song$scaleNum<-str_length(single_song$scale)
+  get_scale(single_song$Full.note.sequence..unaligned.[1], 
+            notes = notes)
+  scales = sapply(single_song$Full.note.sequence..unaligned.,
+                  get_scale, notes = notes)
   
-  # jpeg(paste0("figures/Frequency_ofScale", name, ".jpeg"))
-  # barplot(table(single_song$scaleNum))
-  # dev.off()
-  # 
-  # # barplot of scales ordered by frequency
-  # scale = as.data.frame(
-  #   sort(
-  #     table(single_song$scale), decreasing = TRUE
-  #   )
-  # )
-  # jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
-  # barplot(scale$Freq,las=2,names.arg=scale$Var1, cex.names=.7, main = name)
-  # dev.off()
+  scales_df = data.frame(table(scales))
+  scales_df = scales_df[order(scales_df$Freq, decreasing = TRUE),]
+  
+  jpeg(paste0("figures/Frequency_ofScale", name, ".jpeg"))
+  barplot(scales_df$Freq, 
+          las = 2, 
+          ylab = "No. of Melodies", 
+          names.arg = scales_df$scales)
+  dev.off()
+  
+  scales_n = nchar(scales)
+  scalesn_df = data.frame(table(scales_n))
+  scalesn_df$scales_n = factor(scalesn_df$scales_n, 
+                               levels = 3:8)
+  
+  if(!3 %in% scalesn_df$scales_n){
+    scalesn_df = rbind(scalesn_df, c(3, 0))
+  }
+  
+  scalesn_df = scalesn_df[order(scalesn_df$scales_n),]
+  
+  jpeg(paste0("figures/Frequency_ofScale_sorted", name, ".jpeg"))
+  barplot(scalesn_df$Freq, 
+          ylab = "No. of Scale degrees",
+          xlab = "No. of Melodies", 
+          names.arg = scalesn_df$scales_n)
+  dev.off()
+  
   
   # Outputs for testing
   invisible(

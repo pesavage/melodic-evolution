@@ -9,6 +9,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(projpred)
   library(assertthat)
+  library(loo)
 })
 
 melodic_df = read.csv('data/model_data.csv')
@@ -20,7 +21,7 @@ melodic_df$notepair = paste0(melodic_df$note1, melodic_df$note2)
 japanese_df = melodic_df %>% 
   filter(society == "Japanese")
 
-# This dataset should contain 254 rows
+# This dataset should contain 252 rows
 assert_that(nrow(japanese_df) == 252, msg = "Row numbers are wrong")
 
 #### Null model ####
@@ -122,9 +123,11 @@ fit.5 <-
 fit.5 = add_criterion(fit.5, "loo", moment_match = TRUE,
                       file = "results/functionplusdistance_japanese")
 
-# bayes_R2(fit.5)
-# exp(fixef(fit.5))
+print(
+  paste0("Bayes R2: ", round(bayes_R2(fit.5)[,"Estimate"], 2))
+)
 
+exp(fixef(fit.5))
 
 #### Function * Distance ####
 fit.6 <-

@@ -9,6 +9,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(projpred)
   library(assertthat)
+  library(loo)
 })
 
 
@@ -31,7 +32,6 @@ fit.1 <-
       file = "results/null_english")
 fit.1 = add_criterion(fit.1, "loo", moment_match = TRUE,
                       file = "results/null_english")
-
 
 #### Note Frequency ####
 fit.2 <-
@@ -62,7 +62,7 @@ english_strong = english_df %>%
   dplyr::filter(functional_change == "s")
 
 fit.4.1 <-
-  brm(data = english_strong, family = poisson,
+  brm(data = english_strong[english_strong$semitonal_distance < 7,], family = poisson,
       substitution_count ~ 
         semitonal_distance + 
         frequency1:frequency2:functional_total + 
@@ -71,7 +71,8 @@ fit.4.1 <-
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
       file = "results/strongdistancefrequency_english")
-
+fit.4.1 = add_criterion(fit.4.1, "loo", moment_match = TRUE,
+                        file = "results/strongdistancefrequency_english")
 
 #### Distance model - weak function ####
 english_weak = english_df %>% 
@@ -87,6 +88,8 @@ fit.4.2 <-
       control = list(max_treedepth = 15), sample_prior = TRUE,
       save_pars = save_pars(all = TRUE),
       file = "results/weakdistancefrequency_english")
+fit.4.2 = add_criterion(fit.4.2, "loo", moment_match = TRUE,
+                        file = "results/weakdistancefrequency_english")
 
 
 #### Functional model ####
@@ -114,8 +117,11 @@ fit.5 <-
 fit.5 = add_criterion(fit.5, "loo", moment_match = TRUE,
                       file = "results/functionplusdistance_english")
 
-# bayes_R2(fit.5)
-# exp(fixef(fit.5))
+print(
+  paste0("Bayes R2: ", round(bayes_R2(fit.5)[,"Estimate"], 2))
+)
+
+exp(fixef(fit.5))
 
 #### Function * Distance ####
 fit.6 <-

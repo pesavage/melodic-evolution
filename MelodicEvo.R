@@ -57,12 +57,13 @@ d <- subset(full, PairNo>0)  #Restrict to only highly related pairs
 ##### Calculate mutation rates for different functional types ####
 #### Full English subset ####
 english <- subset(d, Language=="English")
+assert_that(nrow(english) / 2 == 242, msg = "We expect 242 highly related English pairs")
 MelodicEvoAnalysis(english, "english")
 
 #### Full Japanese subset ####
 japanese <- subset(d, Language=="Japanese")
+assert_that(nrow(japanese) / 2 == 86, msg = "We expect 86 highly related Japanese pairs")
 MelodicEvoAnalysis(japanese, "japanese")
-
 
 #### Sensitivity analyses ####
 # For English sample
