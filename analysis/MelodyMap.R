@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
 
 #### Data ####
 data = suppressMessages(
-  read_xlsx("data/MelodicEvoSeq.xlsx", 
+  read_xlsx("data/MelodicEvoSeqFullSongs.xlsx", 
             .name_repair = "universal")
 )
   
@@ -47,7 +47,8 @@ uk_ireland = ggplot() +
   theme(legend.title = element_blank(),
         axis.title=element_blank(),
         axis.text=element_blank(),
-        axis.ticks=element_blank())
+        axis.ticks=element_blank(),
+        panel.grid.major = element_line(colour = "transparent"))
 
 #### Japan ####
 japan_sf <- ne_states(country = "japan", 
@@ -67,7 +68,8 @@ japan = ggplot() +
   theme(legend.title = element_blank(),
         axis.title=element_blank(),
         axis.text=element_blank(),
-        axis.ticks=element_blank())
+        axis.ticks=element_blank(),
+        panel.grid.major = element_line(colour = "transparent"))
 
 #### USA ####
 usa_sf <- ne_states(country = c("United States of America", "Canada"), returnclass = "sf")
@@ -86,7 +88,8 @@ usa = ggplot() +
   theme(legend.title = element_blank(),
         axis.title=element_blank(),
         axis.text=element_blank(),
-        axis.ticks=element_blank())
+        axis.ticks=element_blank(),
+        panel.grid.major = element_line(colour = "transparent"))
 
 cat("Saving Maps...\n")
 cat("UK..\n")
