@@ -117,4 +117,4 @@ japanese_plot =
 p_out = english_plot + japanese_plot +
   plot_layout(guides = "collect") & theme(legend.position = 'bottom')
 
-ggsave(filename = "figures/example_mainfigure.jpeg", plot = p_out)
+ggsave(filename = "figures/figures4b_modeloutput.jpeg", plot = p_out)

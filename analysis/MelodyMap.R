@@ -104,4 +104,4 @@ ggsave(filename = 'figures/usa_map.jpeg', plot = usa)
 cat("Aggregate..\n")
 group_plot = (uk_ireland / usa) | japan + 
   plot_annotation(theme = theme(plot.margin = margin()))
-ggsave(filename = 'figures/group_map.jpeg', plot = group_plot)
+ggsave(filename = 'figures/figure2_maps.jpeg', plot = group_plot)
