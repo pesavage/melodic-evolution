@@ -108,8 +108,8 @@ e<-read.csv("EngHighlyRelatedPairs.csv",header=TRUE)
 e<-rbind(e,j)
 e$X<-row.names(e)
 full<-full[,1:8]
-full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X1", all.x = TRUE) #NB: during code review we had trouble with R reading in data with different column names (e.g., "ï..Overall.ID.No."- will try to improve this using column indices to avoid such problems
-full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X2", all.x = TRUE) #NB: during code review we had trouble with R reading in data with different column names - will try to improve this using column indices to avoid such problems
+full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X1", all.x = TRUE) 
+full<-merge(full, e, by.x = "Overall.ID.No.", by.y = "X2", all.x = TRUE) 
 full$PairNo<-ifelse(is.na(full$X.x), full$X.y, full$X.x)
 full$PairID<-ifelse(is.na(full$X2), full$X1, full$X2)
 full$PID<-ifelse(is.na(full$dist.x), full$dist.y, full$dist.x)
@@ -117,7 +117,7 @@ full$PID<-(1-full$PID)*100
 
 write.csv(full,file="FullSequencesWRelatedDataMerged.csv")
 
-##Used FullSequencesWRelatedDataMerged.csv as basis for manually aligning sequences. After eliminating several highly related pairs that were included due to data entry errrs in original sequence entry, saved the full file as "MelodicEvoSeq.csv"
+##Used FullSequencesWRelatedDataMerged.csv as basis for manually aligning sequences. After eliminating several highly related pairs that were included due to data entry errors in original sequence entry, saved the full file as "MelodicEvoSeq.csv" (later changed to "MelodicEvoSeq.csv" to allow preservation of formatting to show rhythmic function/changed notes)
 
 
 #######

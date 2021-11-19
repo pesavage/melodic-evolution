@@ -43,12 +43,12 @@ if(!dir.exists("results/")) dir.create("results/")
 if(!dir.exists("figures/")) dir.create("figures/")
 
 # To calculate distance matrices  
-#source("analysis/PID.R") #uncomment this to recalculate distance matrices of PID among the 10,064 melodic variants, but be aware that this will take up to a month on a standard computer!
+#source("analysis/PID.R") #uncomment this to recalculate distance matrices of PID among the 10,062 melodic variants, but be aware that this will take up to a month on a standard computer!
 #source("analysis/Dist.R") # uncomment this to re-dentify highly related pairs of melodies
 
 ##### Calculate evolutionary rates of highly-related melodic variant pairs ####
  # Import all 10,000+ sequences. 
- # The highly related pairs were automatically identified using the scripts in "PID.R" and "Dist.R", but a lot of manual work was required to align related pairs, code functional positions, and count the numbers and sizes of all mutation types to create the "MelodicEvoSeq.csv" file used for subsequent analyses
+ # The highly related pairs were automatically identified using the scripts in "PID.R" and "Dist.R", but a lot of manual work was required to align related pairs, code functional positions, and count the numbers and sizes of all mutation types to create the "MelodicEvoSeq.xlsx" file used for subsequent analyses
 full <- suppressMessages(
   read_xlsx("data/MelodicEvoSeq.xlsx", .name_repair = "universal")
 )
